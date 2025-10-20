@@ -10,6 +10,7 @@ INCLUDEPATH +=  ./GeneratedFiles \
                 ./GeneratedFiles/Debug \
                 ./external/freeglut/include
 LIBS        +=  -L./external/freeglut/lib/x64   # on Linux and Mac use "LIBS += -lglut" instead
+LIBS        +=  -lGLU
 DEPENDPATH  += .
 MOC_DIR     += ./GeneratedFiles/debug
 OBJECTS_DIR += debug
