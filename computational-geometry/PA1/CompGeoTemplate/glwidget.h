@@ -9,31 +9,30 @@
 
 #include <QOpenGLWidget>
 
-class GLWidget : public QOpenGLWidget
-{
+class GLWidget : public QOpenGLWidget {
     Q_OBJECT
-public:
-    GLWidget                  (QWidget *parent=0);
-    ~GLWidget                 ();
-signals:
-    void continueRequest      ();
-public slots:
-    void radioButton1Clicked  ();
-    void radioButton2Clicked  ();
-protected:
-    void paintGL              ();
-    void initializeGL         ();
-    void resizeGL             (int width, int height);
-    void keyPressEvent        (QKeyEvent   *event);
-    void mousePressEvent      (QMouseEvent *event);
-private:
+  public:
+    GLWidget(QWidget *parent = 0);
+    ~GLWidget();
+  signals:
+    void continueRequest();
+  public slots:
+    void radioButton1Clicked();
+    void radioButton2Clicked();
 
-    void    clearBackground  (        );		// clear background with backColor
+  protected:
+    void paintGL();
+    void initializeGL();
+    void resizeGL(int width, int height);
+    void keyPressEvent(QKeyEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+
+  private:
+    void clearBackground(); // clear background with backColor
     QPointF transformPosition(QPoint p);
-    double  aspectx, aspecty;
-    float   pointSize, lineWidth, backColor;
+    double aspectx, aspecty;
+    float pointSize, lineWidth, backColor;
 
     QList<QPointF> pointList;
+    QList<QPointF> hull;
 };
-
-
