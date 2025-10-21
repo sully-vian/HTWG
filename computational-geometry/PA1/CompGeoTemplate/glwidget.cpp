@@ -17,6 +17,10 @@ GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     backColor = 0.6f;
 }
 
+enum Algorithm { JARVIS_MARCH, GRAHAMS_SCAN };
+
+Algorithm selectedAlgorithm;
+
 void GLWidget::paintGL() {
     // clear
     clearBackground(); // set background color
@@ -53,8 +57,8 @@ void GLWidget::paintGL() {
 void GLWidget::mousePressEvent(QMouseEvent *event) {
     QPointF point = transformPosition(event->pos());
     if (event->buttons() & Qt::LeftButton) {
-        // TODO: add clicked point to point-list
         pointList.append(point);
+        computeHull();
 
         qDebug()
             << "Implement mousePressEvent for mouse-click-input of points at"
@@ -63,41 +67,81 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     update();
 }
 
-// Return true if the abc angle makes a left turn i.e., if c is on the left side
-// of the (a,b) line. Consider a straight line to be a left turn to avoid
-// problems with multiple points to the same coordinate
-bool isLeftTurn(QPointF a, QPointF b, QPointF c) {
+void GLWidget::computeHull() {
+    if (pointList.size() < 2) {
+        std::cout << "too few point (" << pointList.size() << ") skipped"
+                  << std::endl;
+        return;
+    }
+
+    switch (selectedAlgorithm) {
+        case JARVIS_MARCH:
+            jarvisMarch();
+            break;
+        case GRAHAMS_SCAN:
+            grahamScan();
+            break;
+        default:
+            std::cout << "Please select a computing algorithm" << std::endl;
+    }
+}
+
+/**
+ * Compare two 2D points lexicographically by their coordinates.
+ *
+ * Returns `true` if p1 is "less" than p2; otherwise `false`.
+ */
+bool comp(const QPointF &p1, const QPointF &p2) {
+    if (p1.x() != p2.x()) {
+        return p1.x() < p2.x();
+    } else {
+        // compare y coordinates
+        return p1.y() < p2.y();
+    }
+}
+
+/**
+ * Compute the orientation of the points a,b,c
+ *
+ * Returns:
+ * - > 0: counterclockwise
+ * - < 0: clockwise
+ * - = 0: a,b,c are collinear
+ */
+double orientation(QPointF a, QPointF b, QPointF c) {
     return (b.x() - a.x()) * (c.y() - a.y()) -
-               (b.y() - a.y()) * (c.x() - a.x()) >=
-           0;
+           (b.y() - a.y()) * (c.x() - a.x());
 }
 
-void GLWidget::radioButton1Clicked() {
-    // TODO: toggle to Jarvis' march
-    update();
+void GLWidget::jarvisMarch() {
+    std::cout << "Starting Jarvis' march" << std::endl;
+
+    const int n = pointList.size();
+
+    QList<QPointF> localPoints = pointList; // no need for deep copy for now
+    // find lexicographically smallest point
+    QPointF p1 =
+        *std::min_element(localPoints.begin(), localPoints.end(), comp);
+    QList<QPointF> q = QList<QPointF>();
+    q.append(p1);            // q1 = p1
+    int i = 2;
+    q.append(p1 /* TODO */); // point with smallest angle to horizontal line
+    do {
+        // TODO
+    } while (q.at(i) != p1);
+
+    std::cout << "TODO: implementation" << std::endl;
+    hull = QList<QPointF>(); // reset hull;
 }
 
-void GLWidget::radioButton2Clicked() {
+void GLWidget::grahamScan() {
     std::cout << "Starting Graham's scan..." << std::endl;
 
     const int n = pointList.size();
 
-    if (n < 2) {
-        std::cout << "too few point (" << n << ") skipped" << std::endl;
-        return;
-    }
-
     // sort by X or Y if tie
     QList<QPointF> localPoints = pointList; // no need for deep copy for now
-    std::sort(localPoints.begin(), localPoints.end(),
-              [](const QPointF &p1, const QPointF &p2) {
-                  if (p1.x() != p2.x()) {
-                      return p1.x() < p2.x();
-                  } else {
-                      // compare y coordinates
-                      return p1.y() < p2.y();
-                  }
-              });
+    std::sort(localPoints.begin(), localPoints.end(), comp);
 
     QList<QPointF> upperHull = QList<QPointF>();
     upperHull.append(localPoints.at(0));
@@ -108,8 +152,8 @@ void GLWidget::radioButton2Clicked() {
         int indexB = upperHull.size() - 2;
         int indexC = upperHull.size() - 1;
         while (upperHull.size() > 2 &&
-               isLeftTurn(upperHull.at(indexA), upperHull.at(indexB),
-                          upperHull.at(indexC))) {
+               orientation(upperHull.at(indexA), upperHull.at(indexB),
+                           upperHull.at(indexC)) >= 0) {
             // remove problematic point
             upperHull.removeAt(indexB);
             // update indexes
@@ -128,8 +172,8 @@ void GLWidget::radioButton2Clicked() {
         int indexB = lowerHull.size() - 2;
         int indexC = lowerHull.size() - 1;
         while (lowerHull.size() > 2 &&
-               isLeftTurn(lowerHull.at(indexA), lowerHull.at(indexB),
-                          lowerHull.at(indexC))) {
+               orientation(lowerHull.at(indexA), lowerHull.at(indexB),
+                           lowerHull.at(indexC)) >= 0) {
             // remove problematic point
             lowerHull.removeAt(indexB);
             // update indexes
@@ -146,6 +190,17 @@ void GLWidget::radioButton2Clicked() {
     hull.append(lowerHull);
 
     std::cout << "Finished, hull size: " << hull.size() << std::endl;
+}
+
+void GLWidget::radioButton1Clicked() {
+    selectedAlgorithm = JARVIS_MARCH;
+    computeHull();
+    update();
+}
+
+void GLWidget::radioButton2Clicked() {
+    selectedAlgorithm = GRAHAMS_SCAN;
+    computeHull();
     update();
 }
 

@@ -62,14 +62,14 @@ Polygon GrahamScan(Points P) {
 }
 ```
 
-## Jarvis's March
+## Jarvis' March
 
 Algorithm in pseudocode:
 
 
 ```C++
 Polygon JarvisMarch(Points P) {
-    p = lexicographicMin(P);
+    p1 = lexicographicMin(P);
     q1 = p1;
     i = 2
         qi = end point of line (p1,q1) with smallest angle to horizontalline through p1;

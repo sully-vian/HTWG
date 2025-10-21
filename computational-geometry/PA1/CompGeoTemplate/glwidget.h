@@ -29,6 +29,9 @@ class GLWidget : public QOpenGLWidget {
 
   private:
     void clearBackground(); // clear background with backColor
+    void computeHull();
+    void grahamScan();
+    void jarvisMarch();
     QPointF transformPosition(QPoint p);
     double aspectx, aspecty;
     float pointSize, lineWidth, backColor;
