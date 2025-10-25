@@ -1,7 +1,7 @@
 # Practical Assignment 1: Convex hull computation
 
-- [ ] Graham's Scan
-- [ ] Jarvis' March
+- [X] Graham's Scan
+- [X] Jarvis' March
 - [ ] Chan's Algorithm (Bonus)
 
 ## Commands
