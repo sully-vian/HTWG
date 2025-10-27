@@ -102,7 +102,7 @@ bool comp(const QPointF &p1, const QPointF &p2) {
  * - < 0: clockwise
  * - = 0: a,b,c are collinear
  */
-double orientation(const QPointF a, const QPointF b, const QPointF c) {
+double orientation(const QPointF &a, const QPointF &b, const QPointF &c) {
     return (b.x() - a.x()) * (c.y() - a.y()) -
            (b.y() - a.y()) * (c.x() - a.x());
 }
