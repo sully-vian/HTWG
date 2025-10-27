@@ -61,7 +61,7 @@ void GLWidget::paintGL() {
             std::cout << "Please select a computing algorithm" << std::endl;
     }
     // glBegin(GL_LINE_STRIP);
-    glBegin(GL_LINE_LOOP);
+    glBegin(GL_LINE_LOOP); // loop to complete hull
     for (const QPointF &p : hull) {
         glVertex2f(p.x(), p.y());
     }
@@ -95,7 +95,7 @@ bool comp(const QPointF &p1, const QPointF &p2) {
 }
 
 /**
- * Compute the orientation of the points a,b,c
+ * Compute the orientation of the points a,b,c.
  *
  * Returns:
  * - > 0: counterclockwise
@@ -108,68 +108,20 @@ double orientation(const QPointF a, const QPointF b, const QPointF c) {
 }
 
 /**
- * Compute Jarvis' March and write result in the `hull` variable.
- */
-void GLWidget::jarvisMarch() {
-    std::cout << "Starting Jarvis' march" << std::endl;
-
-    const int n = pointList.size();
-
-    QList<QPointF> localPoints = pointList; // no need for deep copy for now
-    // find lexicographically smallest point
-    const QPointF p1 =
-        *std::min_element(localPoints.begin(), localPoints.end(), comp);
-    QList<QPointF> localHull = QList<QPointF>();
-    localHull.append(p1);
-    QPointF current = p1;          // q1 = p1
-    do {
-        localHull.append(current); // append current
-
-        QPointF best;
-        bool found = false;
-        // pick inital point different than current
-        for (int i = 0; i < n && !found; i++) {
-            QPointF pt = localPoints.at(i);
-            if (pt == current) { // skip
-                continue;
-            }
-            best = pt;
-            found = true;
-        }
-        if (!found) {
-            // all points in localPoints are equal to current ??
-            break;
-        }
-
-        for (const QPointF &pt : localPoints) {
-            double o = orientation(current, best, pt);
-            // if pt is to the right of line (current-best) then pt is a better
-            // candidate
-            if (o < 0) {
-                best = pt;
-            }
-        }
-        current = best;
-
-    } while (current != p1);
-
-    hull = localHull;
-    std::cout << "Finished, hull size: " << hull.size() << std::endl;
-}
-
-/**
  * Compute Graham's Scan and write result in the `hull` variable.
  */
 void GLWidget::grahamScan() {
     std::cout << "Starting Graham's scan..." << std::endl;
 
     const int n = pointList.size();
+    // copy list
+    QList<QPointF> localPoints = pointList;
 
     // sort lexicographically
-    QList<QPointF> localPoints = pointList; // no need for deep copy for now
     std::sort(localPoints.begin(), localPoints.end(), comp);
 
-    QList<QPointF> upperHull = QList<QPointF>();
+    /* compute upper hull left to right */
+    QList<QPointF> upperHull;
     upperHull.append(localPoints.at(0));
     upperHull.append(localPoints.at(1));
     for (int i = 2; i < n; i++) {
@@ -180,7 +132,8 @@ void GLWidget::grahamScan() {
         while (upperHull.size() > 2 &&
                orientation(upperHull.at(indexA), upperHull.at(indexB),
                            upperHull.at(indexC)) >= 0) {
-            // remove problematic point
+            // remove middle point if turn is left or straight line (collinear
+            // points)
             upperHull.removeAt(indexB);
             // update indexes
             indexA = upperHull.size() - 3;
@@ -189,7 +142,8 @@ void GLWidget::grahamScan() {
         }
     }
 
-    QList<QPointF> lowerHull = QList<QPointF>();
+    /* compute lower hull right to left */
+    QList<QPointF> lowerHull;
     lowerHull.append(localPoints.last());
     lowerHull.append(localPoints.at(n - 2));
     for (int i = n - 3; i >= 0; i--) {
@@ -200,7 +154,8 @@ void GLWidget::grahamScan() {
         while (lowerHull.size() > 2 &&
                orientation(lowerHull.at(indexA), lowerHull.at(indexB),
                            lowerHull.at(indexC)) >= 0) {
-            // remove problematic point
+            // remove middle point if turn is left or straight line (collinear
+            // points)
             lowerHull.removeAt(indexB);
             // update indexes
             indexA = lowerHull.size() - 3;
@@ -208,13 +163,68 @@ void GLWidget::grahamScan() {
             indexC = lowerHull.size() - 1;
         }
     }
-    lowerHull.removeFirst();
-    lowerHull.removeLast();
+    lowerHull.removeFirst(); // last point of upperHull
+    lowerHull.removeLast();  // first point of upperHull
 
-    hull = QList<QPointF>(); // reset hull
+    /* concat hulls */
+    hull = QList<QPointF>();
     hull.append(upperHull);
     hull.append(lowerHull);
 
+    std::cout << "Finished, hull size: " << hull.size() << std::endl;
+}
+
+/**
+ * Compute Jarvis' March and write result in the `hull` variable.
+ */
+void GLWidget::jarvisMarch() {
+    std::cout << "Starting Jarvis' march" << std::endl;
+
+    const int n = pointList.size();
+
+    // copy list
+    QList<QPointF> localPoints = pointList;
+
+    // find lexicographically smallest point
+    const QPointF p1 =
+        *std::min_element(localPoints.begin(), localPoints.end(), comp);
+
+    QList<QPointF> localHull;
+    localHull.append(p1); // add smallest point
+
+    QPointF current = p1; // q1 = p1
+    do {
+        localHull.append(current);
+
+        QPointF bestCandidate; // best candidate for next hull point
+        bool found = false;
+        // pick inital point different than current
+        for (int i = 0; i < n && !found; i++) {
+            QPointF pt = localPoints.at(i);
+            if (pt == current) { // skip
+                continue;
+            }
+            bestCandidate = pt;
+            found = true;
+        }
+        if (!found) {
+            // all points in localPoints are equal to current ??
+            break;
+        }
+
+        for (const QPointF &pt : localPoints) {
+            double o = orientation(current, bestCandidate, pt);
+            // if pt is to the right of line (current-best) then pt is a better
+            // candidate
+            if (o < 0) {
+                bestCandidate = pt;
+            }
+        }
+        current = bestCandidate;
+
+    } while (current != p1);
+
+    hull = localHull;
     std::cout << "Finished, hull size: " << hull.size() << std::endl;
 }
 
@@ -239,6 +249,11 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
         case Qt::Key_Q:
             std::cout << "Quitting..." << std::endl;
             QApplication::instance()->quit();
+            break;
+        case Qt::Key_R:
+            std::cout << "Resetting points and hull..." << std::endl;
+            pointList = QList<QPointF>();
+            hull = QList<QPointF>();
             break;
         default:
             QWidget::keyPressEvent(event);
