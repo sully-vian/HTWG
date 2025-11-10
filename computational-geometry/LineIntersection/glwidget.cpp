@@ -8,13 +8,16 @@
 #include "glwidget.h"
 #include "./external/freeglut/include/GL/glut.h"
 #include "qapplication.h"
-#include <QtGui>
+#include "qevent.h"
+#include <QtGlobal>
+#include <QtMath>
 #include <iostream>
 
 GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     pointSize = 20.0f;
     lineWidth = 5.0f;
     backColor = 0.6f;
+    setMouseTracking(true);
 }
 
 void GLWidget::paintGL() {
@@ -31,24 +34,82 @@ void GLWidget::paintGL() {
     glVertex2f(0.0f, 1.0f);
     glEnd();
 
+    // draw lines
+    glBegin(GL_LINES);
+    for (const OLine &oLine : lineList) {
+        if (oLine.orientation == Qt::Orientation::Vertical) {
+            glColor3f(0.2f, 1.0f, 0.2f);
+        } else {
+            glColor3f(0.2f, 0.2f, 1.0f);
+        }
+        QLineF line = oLine.line;
+        glVertex2f(line.x1(), line.y1());
+        glVertex2f(line.x2(), line.y2());
+    }
+    if (pointList.size() % 2) { // waiting for another point
+        const QPointF last = pointList.last();
+        if (last.y() == nextPoint.y()) {
+            glColor3f(0.2f, 1.0f, 0.2f);
+        } else {
+            glColor3f(0.2f, 0.2f, 1.0f);
+        }
+        glVertex2f(last.x(), last.y());
+        glVertex2f(nextPoint.x(), nextPoint.y());
+    }
+    glEnd();
+
     // draw point list
     glColor3f(1.0f, 0.2f, 0.2f);
     glPointSize(pointSize);
     glBegin(GL_POINTS);
-    for (const auto &p : pointList)
-        glVertex2f(p.x(), p.y());
+    for (const QPointF &point : pointList) {
+        glVertex2f(point.x(), point.y());
+    }
+    glVertex2f(nextPoint.x(), nextPoint.y());
     glEnd();
 }
 
-void GLWidget::mousePressEvent(QMouseEvent *event) {
-    QPointF point = transformPosition(event->pos());
-    if (event->buttons() & Qt::LeftButton) {
-        // TODO: add clicked point to point-list
-        pointList.append(point);
+Qt::Orientation orientation(const QLineF &line) {
+    if (line.x1() == line.x2()) {
+        return Qt::Orientation::Horizontal;
+    } else {
+        return Qt::Orientation::Vertical;
+    }
+}
 
-        qDebug()
-            << "Implement mousePressEvent for mouse-click-input of points at"
-            << point;
+void GLWidget::mouseMoveEvent(QMouseEvent *event) {
+    const QPointF mousePoint = transformPosition(event->pos());
+    if (numPoints % 2) {
+        // awaiting another point
+        const QPointF last = pointList.last();
+        const qreal dx = qFabs(last.x() - mousePoint.x());
+        const qreal dy = qFabs(last.y() - mousePoint.y());
+        if (dx > dy) { // horizontal segment
+            nextPoint = QPointF(mousePoint.x(), last.y());
+        } else {       // vertical segment
+            nextPoint = QPointF(last.x(), mousePoint.y());
+        }
+    } else {
+        // free placement
+        nextPoint = mousePoint;
+    }
+    update();
+}
+
+void GLWidget::mousePressEvent(QMouseEvent *event) {
+    if (event->buttons() & Qt::LeftButton) {
+        pointList.append(nextPoint);
+        numPoints++;
+        std::cout << numPoints << " points" << std::endl;
+        if (!(numPoints % 2)) { // add point if even number of points
+            QPointF last = pointList.last();
+            QPointF penultimate = pointList.at(numPoints - 2);
+            QLineF newLine = QLineF(last, penultimate);
+            OLine oLine = {newLine, orientation(newLine)};
+            lineList.append(oLine);
+            std::cout << lineList.size() << " lines (" << oLine.orientation
+                      << ")" << std::endl;
+        }
     }
     update();
 }
