@@ -1,6 +1,6 @@
 
 TEMPLATE    = app
-TARGET      = CompGeoTemplate
+TARGET      = ConvexHull
 DESTDIR     = ./debug
 QT          += core opengl widgets gui  openglwidgets
 CONFIG      += debug

@@ -6,12 +6,12 @@
 
 ## Commands
 
-Before running these commands, go in the `CompGeoTemplate/` drectory.
+Run these commands, from the current directory.
 
 To generate the `Makefile` files run:
 
 ```bash
-qmake6 CompGeoTemplate.pro
+qmake6 ConvexHull.pro
 ```
 
 To build the project run:
@@ -23,7 +23,7 @@ make
 To start the project run:
 
 ```bash
-./debug/CompGeoTemplate
+./debug/ConvexHull
 ```
 
 If `compile_commands.json` is needed (clangd LSP support), run:
