@@ -7,6 +7,7 @@
 //
 #include "glwidget.h"
 #include "./external/freeglut/include/GL/glut.h"
+#include "AVLTree.cpp"
 #include "qapplication.h"
 #include "qevent.h"
 #include <QtGlobal>

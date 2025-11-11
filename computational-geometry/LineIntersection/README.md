@@ -32,6 +32,20 @@ If `compile_commands.json` is needed (clangd LSP support), run:
 bear -- make -j1
 ```
 
+### Tests
+
+The AVL tree implementation can be tested with the following commands:
+
+```bash
+qmake6 AVLTreeTest.pro # generate Makefiles
+
+make # build tests
+
+./avl_test # run tests
+
+dot -Tpng tree.dot | feh - # to open the generated graph as a png
+```
+
 ## The Sweep Line Algorithm
 
 ### Algorithm 1: Intersect iso-oriented line segments
