@@ -1,0 +1,3 @@
+[submodule "cloud-application-development/schwarzwald"]
+	path = cloud-application-development/schwarzwald
+	url = git@github.com:CADSchwarzwald/schwarzwald.git
