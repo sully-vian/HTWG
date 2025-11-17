@@ -3,61 +3,60 @@
 #include <iostream>
 #include <sstream>
 
-template <typename K, typename V> class AVLTree {
+template <typename K, typename V> class AVLNode {
   public:
-    AVLTree() : root(nullptr) {}
+    AVLNode(K key, V value)
+        : height(0), key(key), value(value), left(), right() {};
 
-    bool insert(K key, V value) {
-        bool result;
-        if (root == nullptr) {
-            root = new Node(key, value);
-            result = true;
-        } else if (key < root->key) {
-            result = root->left.insert(key, value);
-        } else if (key > root->key) {
-            result = root->right.insert(key, value);
-        } else {            // key == root.key
-            result = false; // key already exists
+    // returns thenew root of this subtree
+    AVLNode *insert(K key, V value) {
+        if (key < this->key) {
+            if (left) {
+                left = left->insert(key, value);
+            } else {
+                left = new AVLNode(key, value);
+            }
+        } else if (key > this->key) {
+            if (right) {
+                right = right->insert(key, value);
+            } else {
+                right = new AVLNode(key, value);
+            }
+        } else { // duplicate key
+            return this;
         }
-        if (result) {
-            this->balance();
-        }
-        return result;
+        updateHeight();
+        return balance();
     }
 
     /*
      * Returns the string representing the tree according to the DOT syntax
      */
     std::string toDot() {
-        if (!root) {
-            // empty tree
-            return "digraph G {\n}";
-        }
-
         std::ostringstream oss;
         oss << "digraph G {\n";
 
-        std::function<void(Node *)> traverse = [&](Node *node) {
+        std::function<void(AVLNode *)> traverse = [&](AVLNode *node) {
             if (!node) {
                 return;
             }
 
             // Left child
-            if (node->left.root) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->left.root->key
+            if (node->left) {
+                oss << "\t\"" << node->key << "\" -> \"" << node->left->key
                     << "\";\n";
-                traverse(node->left.root);
+                traverse(node->left);
             }
 
             // Right child
-            if (node->right.root) {
-                oss << "\t\"" << node->key << "\" -> \""
-                    << node->right.root->key << "\";\n";
-                traverse(node->right.root);
+            if (node->right) {
+                oss << "\t\"" << node->key << "\" -> \"" << node->right->key
+                    << "\";\n";
+                traverse(node->right);
             }
         };
 
-        traverse(root);
+        traverse(this);
         oss << "}\n";
         return oss.str();
     };
@@ -65,93 +64,57 @@ template <typename K, typename V> class AVLTree {
     void print(const char msg[]) { std::cout << msg << std::endl; }
 
   private:
-    struct Node {
-        int height;
-        K key;
-        V value;
-        AVLTree left;
-        AVLTree right;
-        Node *succ; // in-order successor
-
-        /*
-         * Node inserted as a leaf so initial height is 0
-         */
-        Node(K key, V value)
-            : height(0), key(key), value(value), left(), right() {};
-    };
-
-    Node *root;
-
-    void balance() {
-        if (root == nullptr) {
-            // empty tree, nothing to do
-            return;
-        }
-
-        // update height
-        root->height =
-            std::max(root->left.getHeight(), root->right.getHeight()) + 1;
-
-        if (getBalance() == -2) {        // tree is left heavy
-            if (root->left.getBalance() <= 0) {
-                rotateRight();           // A1
-            } else {
-                rotateLeftRight();       // A2
-            }
-        } else if (getBalance() == +2) { // tree is right heavy
-            if (root->right.getBalance() >= 0) {
-                rotateLeft();            // B1
-            } else {
-                rotateRightLeft();       // B2
-            }
-        }
-    }
+    K key;
+    V value;
+    int height;
+    AVLNode *left;
+    AVLNode *right;
 
     /* ------------------- */
     /* Auxiliary functions */
     /* ------------------- */
 
-    int getHeight() { return root ? root->height : -1; }
+    int getHeight(AVLNode *node) { return node ? node->height : -1; }
+    int getBalance() { return getHeight(right) - getHeight(left); }
 
-    int getBalance() {
-        return root ? root->right.getHeight() - root->left.getHeight() : 0;
+    void updateHeight() {
+        height = 1 + std::max(getHeight(left), getHeight(right));
     }
 
-    void rotateRight() {
-        Node *oldRoot = root;
-        Node *newRoot = oldRoot->left.root;
-        // re-link: oldRoot left as newRoot right
-        oldRoot->left.root = newRoot->right.root;
-        newRoot->right.root = oldRoot;
-        oldRoot->height =
-            std::max(oldRoot->left.getHeight(), oldRoot->right.getHeight()) + 1;
-        newRoot->height =
-            std::max(newRoot->left.getHeight(), newRoot->right.getHeight()) + 1;
-
-        root = newRoot; // set new root
+    AVLNode *rotateLeft() {
+        AVLNode *newRoot = right;
+        right = newRoot->left;
+        newRoot->left = this;
+        updateHeight();
+        newRoot->updateHeight();
+        return newRoot;
+    }
+    AVLNode *rotateRight() {
+        AVLNode *newRoot = left;
+        left = newRoot->right;
+        newRoot->right = this;
+        updateHeight();
+        newRoot->updateHeight();
+        return newRoot;
     }
 
-    void rotateLeft() {
-        Node *oldRoot = root;
-        Node *newRoot = oldRoot->right.root;
-
-        oldRoot->right.root = newRoot->left.root;
-        newRoot->left.root = oldRoot;
-        oldRoot->height =
-            std::max(oldRoot->left.getHeight(), oldRoot->right.getHeight()) + 1;
-        newRoot->height =
-            std::max(newRoot->left.getHeight(), newRoot->right.getHeight()) + 1;
-
-        root = newRoot; // set new root
-    }
-
-    void rotateLeftRight() {
-        root->left.rotateLeft();
-        rotateRight();
-    }
-
-    void rotateRightLeft() {
-        root->right.rotateRight();
-        rotateLeft();
+    AVLNode *balance() {
+        int b = getBalance();
+        if (b == -2) { // left heavy
+            if (left->getBalance() <= 0) {
+                return rotateRight();
+            } else {
+                left = left->rotateLeft();
+                return rotateRight();
+            }
+        } else if (b == 2) { // right heavy
+            if (right->getBalance() >= 0) {
+                return rotateLeft();
+            } else {
+                right = right->rotateRight();
+                return rotateLeft();
+            }
+        }
+        return this; // nothing to do
     }
 };
