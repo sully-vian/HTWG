@@ -13,3 +13,12 @@
 [submodule "cloud-application-development/schwarzwald-submissions"]
 	path = cloud-application-development/schwarzwald-submissions
 	url = git@github.com:CADSchwarzwald/schwarzwald-submissions.git
+[submodule "cloud-application-development/recommendations"]
+	path = cloud-application-development/recommendations
+	url = git@github.com:CADSchwarzwald/recommendations.git
+[submodule "cloud-application-development/schwarzwald-kubernetes"]
+	path = cloud-application-development/schwarzwald-kubernetes
+	url = git@github.com:CADSchwarzwald/schwarzwald-kubernetes.git
+[submodule "cloud-application-development/schwarzwald-compose"]
+	path = cloud-application-development/schwarzwald-compose
+	url = git@github.com:CADSchwarzwald/schwarzwald-compose.git
