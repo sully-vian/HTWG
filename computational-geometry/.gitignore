@@ -1,3 +1,6 @@
+debug/
+tree.dot
+
 # clangd cache
 **/.cache/clangd/
 
