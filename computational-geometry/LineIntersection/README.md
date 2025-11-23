@@ -39,7 +39,7 @@ The AVL tree implementation can be tested with the following commands:
 ```bash
 make sub-AVLTreeTest-pro # build only tests
 
-./debug/avl_test # run tests
+./debug/avlTreeTest # run tests
 
 dot -Tpng tree.dot | feh - # to open the generated tree as a png
 ```

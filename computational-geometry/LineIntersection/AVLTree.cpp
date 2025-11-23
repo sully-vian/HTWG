@@ -4,46 +4,46 @@
 #include <sstream>
 #include <vector>
 
-template <typename KeyType, typename ValueType> class Node {
+template <typename KeyType, typename ValueType> class AVLTree {
   public:
-    Node(KeyType key, ValueType value)
+    AVLTree(KeyType key, ValueType value)
         : key(key), val(value), height(0), left(nullptr), right(nullptr),
           pred(nullptr), succ(nullptr) {};
 
-    static bool insert(Node *&root, KeyType key, ValueType v) {
-        Node *pred = nullptr;
-        Node *succ = nullptr;
-        return insertInternal(root, key, v, pred, succ);
+    static bool insert(AVLTree *&tree, KeyType key, ValueType v) {
+        AVLTree *pred = nullptr;
+        AVLTree *succ = nullptr;
+        return insertInternal(tree, key, v, pred, succ);
     }
 
-    static bool remove(Node *&root, KeyType key) {
-        return removeInternal(root, key);
+    static bool remove(AVLTree *&tree, KeyType key) {
+        return removeInternal(tree, key);
     }
 
     // use the visit function to add the elements to a container
     static void range(
-        Node *root, KeyType lo, KeyType hi,
+        AVLTree *tree, KeyType lo, KeyType hi,
         const std::function<void(const KeyType &, const ValueType &)> &visit) {
-        if (!root) {
+        if (!tree) {
             return;
         }
-        Node *start = lowerBound(root, lo);
+        AVLTree *start = lowerBound(tree, lo);
         while (start && start->key < lo) {
             start = start->succ;
         }
-        for (Node *n = start; n && n->key <= hi; n = n->succ) {
+        for (AVLTree *n = start; n && n->key <= hi; n = n->succ) {
             visit(n->key, n->val);
         }
     }
 
-    static bool validate(Node *&root) {
-        if (!root) {
+    static bool validate(AVLTree *&tree) {
+        if (!tree) {
             return true;
         }
         bool ok = true;
-        std::vector<Node *> inOrder;
+        std::vector<AVLTree *> inOrder;
 
-        std::function<int(Node *)> dfs = [&](Node *n) -> int {
+        std::function<int(AVLTree *)> dfs = [&](AVLTree *n) -> int {
             if (!n)
                 return -1;
             int lh = dfs(n->left);
@@ -75,13 +75,13 @@ template <typename KeyType, typename ValueType> class Node {
             }
             return expected;
         };
-        dfs(root);
+        dfs(tree);
 
         // check in-order strict increase and successor chain alignment
         for (size_t i = 0; i < inOrder.size(); ++i) {
-            Node *curr = inOrder[i];
-            Node *prev = (i > 0) ? inOrder[i - 1] : nullptr;
-            Node *next = (i < inOrder.size() - 1) ? inOrder[i + 1] : nullptr;
+            AVLTree *curr = inOrder[i];
+            AVLTree *prev = (i > 0) ? inOrder[i - 1] : nullptr;
+            AVLTree *next = (i < inOrder.size() - 1) ? inOrder[i + 1] : nullptr;
 
             // check doubly-linked list integrity
             if (curr->pred != prev) {
@@ -105,33 +105,33 @@ template <typename KeyType, typename ValueType> class Node {
         std::ostringstream oss;
         oss << "digraph G {\n";
 
-        std::function<void(Node *)> traverse = [&](Node *node) {
-            if (!node) {
+        std::function<void(AVLTree *)> traverse = [&](AVLTree *tree) {
+            if (!tree) {
                 return;
             }
 
             // Left child
-            if (node->left) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->left->key
+            if (tree->left) {
+                oss << "\t\"" << tree->key << "\" -> \"" << tree->left->key
                     << "\"[color=red, label=\"L\", fontcolor=red];\n";
-                traverse(node->left);
+                traverse(tree->left);
             }
 
             // Right child
-            if (node->right) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->right->key
+            if (tree->right) {
+                oss << "\t\"" << tree->key << "\" -> \"" << tree->right->key
                     << "\"[color=green, label=\"R\", fontcolor=green];\n";
-                traverse(node->right);
+                traverse(tree->right);
             }
 
             // successor
-            if (node->succ) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->succ->key
+            if (tree->succ) {
+                oss << "\t\"" << tree->key << "\" -> \"" << tree->succ->key
                     << "\"[style=dashed, color=blue];\n";
             }
             // predecessor
-            if (node->pred) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->pred->key
+            if (tree->pred) {
+                oss << "\t\"" << tree->key << "\" -> \"" << tree->pred->key
                     << "\"[style=dotted, color=gray];\n";
             }
         };
@@ -147,165 +147,171 @@ template <typename KeyType, typename ValueType> class Node {
     KeyType key;
     ValueType val;
     int height;
-    Node *left;
-    Node *right;
-    Node *pred; // in-order predecessor
-    Node *succ; // in-order successor
+    AVLTree *left;
+    AVLTree *right;
+    AVLTree *pred; // in-order predecessor
+    AVLTree *succ; // in-order successor
 
     /* ------------------- */
     /* Auxiliary functions */
     /* ------------------- */
 
-    static int getHeight(const Node *p) { return p ? p->height : -1; }
-
-    static int getBalance(const Node *p) {
-        return p ? getHeight(p->right) - getHeight(p->left) : 0;
+    static int getHeight(const AVLTree *tree) {
+        return tree ? tree->height : -1;
     }
 
-    static bool insertInternal(Node *&p, KeyType key, ValueType v, Node *&pred,
-                               Node *&succ) {
+    static int getBalance(const AVLTree *tree) {
+        return tree ? getHeight(tree->right) - getHeight(tree->left) : 0;
+    }
+
+    static bool insertInternal(AVLTree *&tree, KeyType key, ValueType v,
+                               AVLTree *&pred, AVLTree *&succ) {
         bool inserted;
-        if (!p) { // key does not exist in the tree
-            p = new Node(key, v);
-            balance(p);
-            p->succ = succ;
-            p->pred = pred;
+        if (!tree) { // key does not exist in the tree
+            tree = new AVLTree(key, v);
+            balance(tree);
+            tree->succ = succ;
+            tree->pred = pred;
             if (pred) {
-                pred->succ = p;
+                pred->succ = tree;
             }
             if (succ) {
-                succ->pred = p;
+                succ->pred = tree;
             }
             inserted = true;
-        } else if (key < p->key) { // smaller, insert left
-            succ = p;
-            inserted = insertInternal(p->left, key, v, pred, succ);
-        } else if (key > p->key) { // larger, insert right
-            pred = p;
-            inserted = insertInternal(p->right, key, v, pred, succ);
-        } else {                   // key exists, nothing to do
+        } else if (key < tree->key) { // smaller, insert left
+            succ = tree;
+            inserted = insertInternal(tree->left, key, v, pred, succ);
+        } else if (key > tree->key) { // larger, insert right
+            pred = tree;
+            inserted = insertInternal(tree->right, key, v, pred, succ);
+        } else {                      // key exists, nothing to do
             inserted = false;
         }
 
         if (inserted) {
-            balance(p);
+            balance(tree);
         }
         return inserted;
     }
 
-    static bool removeInternal(Node *&p, KeyType key) {
+    static bool removeInternal(AVLTree *&tree, KeyType key) {
         bool removed;
-        if (!p) {
+        if (!tree) {
             removed = false;
-        } else if (key < p->key) {
-            removed = removeInternal(p->left, key);
+        } else if (key < tree->key) {
+            removed = removeInternal(tree->left, key);
 
-        } else if (key > p->key) {
-            removed = removeInternal(p->right, key);
+        } else if (key > tree->key) {
+            removed = removeInternal(tree->right, key);
         } else {
 
             // found node
-            Node *pred = p->pred;
-            Node *succ = p->succ;
-            if (!p->left || !p->right) {                    // leaf or one child
+            AVLTree *pred = tree->pred;
+            AVLTree *succ = tree->succ;
+            if (!tree->left || !tree->right) { // leaf or one child
 
-                Node *child = p->left ? p->left : p->right; // null if p is leaf
+                // child is null if tree is leaf
+                AVLTree *child = tree->left ? tree->left : tree->right;
 
                 // update both directions of linked list
                 if (pred) {
-                    pred->succ = p->succ;
+                    pred->succ = tree->succ;
                 }
                 if (succ) {
-                    succ->pred = p->pred;
+                    succ->pred = tree->pred;
                 }
-                delete p;
-                p = child; // replace p with the child
+                delete tree;
+                tree = child; // replace tree with the child
 
-            } else {       // two children: copy succ data then remove succ
+            } else {          // two children: copy succ data then remove succ
 
-                // successor cannot be null because p has right subtree
-                KeyType succKey = p->succ->key;
-                ValueType succVal = p->succ->val;
+                // successor cannot be null because tree has right subtree
+                KeyType succKey = tree->succ->key;
+                ValueType succVal = tree->succ->val;
 
                 // recursively removes successor
-                removeInternal(p->right, succKey);
+                removeInternal(tree->right, succKey);
 
-                // replace p with the values from succ
-                p->key = succKey;
-                p->val = succVal;
+                // replace tree with the values from succ
+                tree->key = succKey;
+                tree->val = succVal;
             }
             removed = true;
         }
         // balance on the way up after recursive calls
         if (removed) {
-            balance(p);
+            balance(tree);
         }
         return removed;
     }
 
     // Lower bound (first node with key >= k)
-    static Node *lowerBound(Node *root, KeyType k) {
-        Node *candidate = nullptr;
-        while (root) {
-            if (k <= root->key) {
-                candidate = root;
-                root = root->left;
+    static AVLTree *lowerBound(AVLTree *tree, KeyType k) {
+        AVLTree *candidate = nullptr;
+        while (tree) {
+            if (k <= tree->key) {
+                candidate = tree;
+                tree = tree->left;
             } else {
-                root = root->right;
+                tree = tree->right;
             }
         }
         return candidate;
     }
 
-    static void rotateRight(Node *&p) {
-        Node *q = p->left;
-        p->left = q->right;
-        q->right = p;
-        p->height = std::max(getHeight(p->left), getHeight(p->right)) + 1;
+    static void rotateRight(AVLTree *&tree) {
+        AVLTree *q = tree->left;
+        tree->left = q->right;
+        q->right = tree;
+        tree->height =
+            std::max(getHeight(tree->left), getHeight(tree->right)) + 1;
         q->height = std::max(getHeight(q->left), getHeight(q->right)) + 1;
-        p = q;
+        tree = q;
     }
 
-    static void rotateLeft(Node *&p) {
-        Node *q = p->right;
-        p->right = q->left;
-        q->left = p;
-        p->height = std::max(getHeight(p->left), getHeight(p->right)) + 1;
+    static void rotateLeft(AVLTree *&tree) {
+        AVLTree *q = tree->right;
+        tree->right = q->left;
+        q->left = tree;
+        tree->height =
+            std::max(getHeight(tree->left), getHeight(tree->right)) + 1;
         q->height = std::max(getHeight(q->left), getHeight(q->right)) + 1;
-        p = q;
+        tree = q;
     }
 
-    static void rotateLeftRight(Node *&p) {
-        rotateLeft(p->left);
-        rotateRight(p);
+    static void rotateLeftRight(AVLTree *&tree) {
+        rotateLeft(tree->left);
+        rotateRight(tree);
     }
 
-    static void rotateRightLeft(Node *&p) {
-        rotateRight(p->right);
-        rotateLeft(p);
+    static void rotateRightLeft(AVLTree *&tree) {
+        rotateRight(tree->right);
+        rotateLeft(tree);
     }
 
     // balance the tree(only
-    static void balance(Node *&p) {
-        if (!p) {
+    static void balance(AVLTree *&tree) {
+        if (!tree) {
             return;
         }
 
         // update height
-        p->height = std::max(getHeight(p->left), getHeight(p->right)) + 1;
+        tree->height =
+            std::max(getHeight(tree->left), getHeight(tree->right)) + 1;
 
-        int b = getBalance(p);
+        int b = getBalance(tree);
         if (b == -2) { // left heavy
-            if (getBalance(p->left) <= 0) {
-                rotateRight(p);
+            if (getBalance(tree->left) <= 0) {
+                rotateRight(tree);
             } else {
-                rotateLeftRight(p);
+                rotateLeftRight(tree);
             }
         } else if (b == 2) { // right heavy
-            if (getBalance(p->right) >= 0) {
-                rotateLeft(p);
+            if (getBalance(tree->right) >= 0) {
+                rotateLeft(tree);
             } else {
-                rotateRightLeft(p);
+                rotateRightLeft(tree);
             }
         }
     }

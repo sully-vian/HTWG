@@ -115,6 +115,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     update();
 }
 
+void computeIntersections() {}
+
 //--------------------------------------------------------------------------------------------------------------------
 // There is nothing to be done below this line
 
