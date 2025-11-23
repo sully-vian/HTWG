@@ -16,9 +16,6 @@ class GLWidget : public QOpenGLWidget {
     ~GLWidget();
   signals:
     void continueRequest();
-  public slots:
-    void radioButton1Clicked();
-    void radioButton2Clicked();
 
   protected:
     void paintGL();

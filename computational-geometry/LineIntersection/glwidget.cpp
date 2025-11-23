@@ -115,16 +115,6 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     update();
 }
 
-void GLWidget::radioButton1Clicked() {
-    // TODO: toggle to Jarvis' march
-    update();
-}
-
-void GLWidget::radioButton2Clicked() {
-    // TODO: toggle to Graham's scan
-    update();
-}
-
 //--------------------------------------------------------------------------------------------------------------------
 // There is nothing to be done below this line
 
