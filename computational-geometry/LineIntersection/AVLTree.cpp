@@ -8,7 +8,7 @@ template <typename KeyType, typename ValueType> class Node {
   public:
     Node(KeyType key, ValueType value)
         : key(key), val(value), height(0), left(nullptr), right(nullptr),
-          next(nullptr) {};
+          pred(nullptr), succ(nullptr) {};
 
     static bool insert(Node *&root, KeyType key, ValueType v) {
         Node *pred = nullptr;
@@ -17,9 +17,10 @@ template <typename KeyType, typename ValueType> class Node {
     }
 
     static bool remove(Node *&root, KeyType key) {
-        return removeInternal(root, root, key);
+        return removeInternal(root, key);
     }
 
+    // use the visit function to add the elements to a container
     static void range(
         Node *root, KeyType lo, KeyType hi,
         const std::function<void(const KeyType &, const ValueType &)> &visit) {
@@ -28,18 +29,13 @@ template <typename KeyType, typename ValueType> class Node {
         }
         Node *start = lowerBound(root, lo);
         while (start && start->key < lo) {
-            start = start->next;
+            start = start->succ;
         }
-        for (Node *n = start; n && n->key <= hi; n = n->next) {
+        for (Node *n = start; n && n->key <= hi; n = n->succ) {
             visit(n->key, n->val);
         }
     }
 
-    static void search(void) {
-        // TODO
-    }
-
-    // TODO: finish
     static bool validate(Node *&root) {
         if (!root) {
             return true;
@@ -83,17 +79,20 @@ template <typename KeyType, typename ValueType> class Node {
 
         // check in-order strict increase and successor chain alignment
         for (size_t i = 0; i < inOrder.size(); ++i) {
-            if (i + 1 < inOrder.size()) {
-                if (inOrder[i]->next != inOrder[i + 1]) {
-                    ok = false;
-                }
-                if (inOrder[i]->key >= inOrder[i + 1]->key) {
-                    ok = false;
-                }
-            } else {
-                if (inOrder[i]->next != nullptr) {
-                    ok = false;
-                }
+            Node *curr = inOrder[i];
+            Node *prev = (i > 0) ? inOrder[i - 1] : nullptr;
+            Node *next = (i < inOrder.size() - 1) ? inOrder[i + 1] : nullptr;
+
+            // check doubly-linked list integrity
+            if (curr->pred != prev) {
+                ok = false;
+            }
+            if (curr->succ != next) {
+                ok = false;
+            }
+            // check sorting
+            if (next && curr->key >= next->key) {
+                ok = false;
             }
         }
         return ok;
@@ -126,9 +125,14 @@ template <typename KeyType, typename ValueType> class Node {
             }
 
             // successor
-            if (node->next) {
-                oss << "\t\"" << node->key << "\" -> \"" << node->next->key
+            if (node->succ) {
+                oss << "\t\"" << node->key << "\" -> \"" << node->succ->key
                     << "\"[style=dashed, color=blue];\n";
+            }
+            // predecessor
+            if (node->pred) {
+                oss << "\t\"" << node->key << "\" -> \"" << node->pred->key
+                    << "\"[style=dotted, color=gray];\n";
             }
         };
 
@@ -137,7 +141,7 @@ template <typename KeyType, typename ValueType> class Node {
         return oss.str();
     };
 
-    void print(const char msg[]) { std::cout << msg << std::endl; }
+    static void print(const std::string msg) { std::cout << msg << std::endl; }
 
   private:
     KeyType key;
@@ -145,7 +149,8 @@ template <typename KeyType, typename ValueType> class Node {
     int height;
     Node *left;
     Node *right;
-    Node *next; // in-order successor
+    Node *pred; // in-order predecessor
+    Node *succ; // in-order successor
 
     /* ------------------- */
     /* Auxiliary functions */
@@ -163,9 +168,13 @@ template <typename KeyType, typename ValueType> class Node {
         if (!p) { // key does not exist in the tree
             p = new Node(key, v);
             balance(p);
-            p->next = succ;
+            p->succ = succ;
+            p->pred = pred;
             if (pred) {
-                pred->next = p;
+                pred->succ = p;
+            }
+            if (succ) {
+                succ->pred = p;
             }
             inserted = true;
         } else if (key < p->key) { // smaller, insert left
@@ -184,73 +193,51 @@ template <typename KeyType, typename ValueType> class Node {
         return inserted;
     }
 
-    static Node *findPred(Node *root, KeyType key) {
-        Node *pred = nullptr;
-        while (root) {
-            if (key < root->key) {
-                root = root->left;
-            } else if (key > root->key) {
-                pred = root;
-                root = root->right;
-            } else { // found
-                break;
-            }
-        }
-        return pred;
-    }
-
-    static bool removeInternal(Node *&p, Node *root, KeyType key) {
-        bool removed = false;
+    static bool removeInternal(Node *&p, KeyType key) {
+        bool removed;
         if (!p) {
             removed = false;
-
         } else if (key < p->key) {
-            removed = removeInternal(p->left, root, key);
+            removed = removeInternal(p->left, key);
 
         } else if (key > p->key) {
-            removed = removeInternal(p->right, root, key);
+            removed = removeInternal(p->right, key);
+        } else {
 
-        } else {                         // found node
-            Node *pred = findPred(root, key);
-            if (!p->left && !p->right) { // leaf
+            // found node
+            Node *pred = p->pred;
+            Node *succ = p->succ;
+            if (!p->left || !p->right) {                    // leaf or one child
+
+                Node *child = p->left ? p->left : p->right; // null if p is leaf
+
+                // update both directions of linked list
                 if (pred) {
-                    pred->next = p->next;
+                    pred->succ = p->succ;
+                }
+                if (succ) {
+                    succ->pred = p->pred;
                 }
                 delete p;
-                p = nullptr;
+                p = child; // replace p with the child
 
-            } else if (!p->left) { // only right child
-                if (pred) {
-                    pred->next = p->next;
-                }
-                Node *tmp = p;
-                p = p->right;
-                delete tmp;
+            } else {       // two children: copy succ data then remove succ
 
-            } else if (!p->right) { // only right children
-                if (pred) {
-                    pred->next = p->next;
-                }
-                Node *tmp = p;
-                p = p->left;
-                delete tmp;
+                // successor cannot be null because p has right subtree
+                KeyType succKey = p->succ->key;
+                ValueType succVal = p->succ->val;
 
-            } else { // two children
-                // find successor (left most in right tree)
-                Node *succ = p->right;
-                while (succ->left) {
-                    succ = succ->left;
-                }
-                p->key = succ->key;
-                p->val = succ->val;
-                p->next = succ->next;
-                // remove successor node from right tree
-                removeInternal(p->right, root, succ->key);
+                // recursively removes successor
+                removeInternal(p->right, succKey);
+
+                // replace p with the values from succ
+                p->key = succKey;
+                p->val = succVal;
             }
             removed = true;
         }
-
-        if (removed && p) {
+        // balance on the way up after recursive calls
+        if (removed) {
             balance(p);
         }
         return removed;
@@ -298,6 +285,7 @@ template <typename KeyType, typename ValueType> class Node {
         rotateLeft(p);
     }
 
+    // balance the tree(only
     static void balance(Node *&p) {
         if (!p) {
             return;

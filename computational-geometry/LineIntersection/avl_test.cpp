@@ -79,6 +79,40 @@ int main() {
         // Tree should be empty now (root == nullptr)
         CHECK(root, root == nullptr);
     }
+    { // Test 4: Range Search
+        Node<int, int> *root = nullptr;
+        std::vector<int> allVals;
+        for (int i = 10; i <= 100; i += 10) {
+            Node<int, int>::insert(root, i, i);
+            allVals.push_back(i);
+        }
+        std::vector<int> res;
+        std::vector<int> expected;
+        const std::function<void(const int &, const int &)> visit =
+            [&](const int &k, const int &) { res.push_back(k); };
+
+        // Case 1: Middle range [35, 75] -> {40, 50, 60, 70}
+        Node<int, int>::range(root, 35, 75, visit);
+        expected = {40, 50, 60, 70};
+        CHECK(root, res == expected);
+        res.clear();
+
+        // Case 2: Range includes boundaries [20, 40] -> {20, 30, 40}
+        Node<int, int>::range(root, 20, 40, visit);
+        expected = {20, 30, 40};
+        CHECK(root, res == expected);
+        res.clear();
+
+        // Case 3: No overlap (empty)
+        Node<int, int>::range(root, 150, 200, visit);
+        CHECK(root, res.empty());
+        res.clear();
+
+        // Case 4: Full range
+        res.clear();
+        Node<int, int>::range(root, 0, 200, visit);
+        CHECK(root, res == allVals);
+    }
     std::cout << "All AVL tests passed." << std::endl;
 
     { // print tree

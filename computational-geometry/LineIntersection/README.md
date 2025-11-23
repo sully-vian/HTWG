@@ -8,10 +8,10 @@
 
 Run these commands, from the current directory.
 
-To generate the `Makefile` files run:
+To generate the `Makefile` run:
 
 ```bash
-qmake6 LineIntersection.pro
+qmake6 All.pro
 ```
 
 To build the project run:
@@ -37,18 +37,14 @@ bear -- make -j1
 The AVL tree implementation can be tested with the following commands:
 
 ```bash
-qmake6 AVLTreeTest.pro # generate Makefiles
+make sub-AVLTreeTest-pro # build only tests
 
-make # build tests
+./debug/avl_test # run tests
 
-./avl_test # run tests
-
-dot -Tpng tree.dot | feh - # to open the generated graph as a png
+dot -Tpng tree.dot | feh - # to open the generated tree as a png
 ```
 
 ## The Sweep Line Algorithm
-
-### Algorithm 1: Intersect iso-oriented line segments
 
 ```C++
 Q = sortByX(events);
@@ -70,28 +66,3 @@ while (!Q.empty()){
 }
 ```
 
-### Algorithm 2: Find knot p with smallest key >= y
-
-```C++
-p = root;
-q = NULL;
-while ((p != NULL) && (p.key != y)) {
-    q = p;
-    if (y < p.key) {
-        p = p.leftChild;
-    } else {
-        p = p.rightChild;
-    }
-    if (p != NULL) { // key==y found
-        return p; 
-    } else if (root == NULL) { // empty tree
-        return NULL;
-    } else if (q == root) { // tree has only one knot
-        return NULL or root depending on root.key;
-    } else if (y < q.key) {
-        return q;
-    } else {
-        return successor(q);
-    }
-}
-```
