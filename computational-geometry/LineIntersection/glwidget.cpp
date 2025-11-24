@@ -67,8 +67,6 @@ void GLWidget::paintGL() {
     glVertex2f(nextPoint.x(), nextPoint.y());
     glEnd();
 
-    computeIntersections();
-
     // draw intersections
     glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_POINTS);
@@ -107,24 +105,27 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
 
 void GLWidget::mousePressEvent(QMouseEvent *event) {
     if (event->buttons() & Qt::LeftButton) {
-        QPointF nextEventPoint = {nextPoint.x(),
-                                  nextPoint.y()}; // TODO: finish init
+        QPointF nextEventPoint = QPointF(nextPoint.x(), nextPoint.y());
         pointList.append(nextEventPoint);
         numPoints++;
-        std::cout << numPoints << " points" << std::endl;
         if (!(numPoints % 2)) { // add line if even number of points
             QPointF last = pointList.last();
             QPointF penultimate = pointList.at(numPoints - 2);
             OLine oLine = OLine(last, penultimate);
             lineList.append(oLine);
-            std::cout << lineList.size() << " lines (" << oLine.orientation()
-                      << ")" << std::endl;
+
+            std::cout << "computing intersections..." << std::endl;
+            computeIntersections();
+            std::cout << "found " << intersectionList.size() << " intersections"
+                      << std::endl;
         }
     }
+
     update();
 }
 
 void GLWidget::computeIntersections() {
+    intersectionList = QList<QPointF>(); // reset
     QList<SweepEvent> q; // Init set q with all events sorted by x
 
     // Create Events
@@ -184,6 +185,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
             break;
         case Qt::Key_R:
             std::cout << "Resetting points..." << std::endl;
+            numPoints = 0;
             pointList = QList<QPointF>();
             lineList = QList<OLine>();
             intersectionList = QList<QPointF>();

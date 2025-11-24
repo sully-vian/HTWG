@@ -27,7 +27,17 @@ template <typename KeyType, typename ValueType> class AVLTree {
         if (!tree) {
             return;
         }
-        AVLTree *start = lowerBound(tree, lo);
+
+        // find start node
+        AVLTree *start = nullptr;
+        while (tree) {
+            if (lo <= tree->key) {
+                start = tree;
+                tree = tree->left;
+            } else {
+                tree = tree->right;
+            }
+        }
         while (start && start->key < lo) {
             start = start->succ;
         }
@@ -244,20 +254,6 @@ template <typename KeyType, typename ValueType> class AVLTree {
             balance(tree);
         }
         return removed;
-    }
-
-    // Lower bound (first node with key >= k)
-    static AVLTree *lowerBound(AVLTree *tree, KeyType k) {
-        AVLTree *candidate = nullptr;
-        while (tree) {
-            if (k <= tree->key) {
-                candidate = tree;
-                tree = tree->left;
-            } else {
-                tree = tree->right;
-            }
-        }
-        return candidate;
     }
 
     static void rotateRight(AVLTree *&tree) {

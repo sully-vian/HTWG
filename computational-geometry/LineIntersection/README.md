@@ -1,8 +1,8 @@
 # Practical Assignment 2: Line Intersection
 
-- [ ] Implement a Binary Search Tree which follows the requirements
-- [ ] Test the Binary Search Tree (Bonus)
-- [ ] Implement the sweep line algorithm
+- [x] Implement a Binary Search Tree which follows the requirements
+- [x] Test the Binary Search Tree (Bonus)
+- [x] Implement the sweep line algorithm
 
 ## Commands
 
