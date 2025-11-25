@@ -1,6 +1,3 @@
-#set heading(numbering: "1.")
-#set document(author: "Vianney Hervy", title: [Exercice sheet 1])
-
 #let ulink(url, text: none) = if (text == none) {
   underline(link(url)[#url])
 } else {
@@ -12,6 +9,10 @@
   #raw(body, lang: lang)
   #line(length: 100%, stroke: 0.1pt)
 ]
+
+#set document(author: "Vianney Hervy", title: [Software Security - Exercice sheet 1])
+#set page(numbering: "1")
+#set heading(numbering: "1.")
 
 #title()
 
