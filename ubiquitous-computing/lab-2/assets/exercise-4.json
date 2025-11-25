@@ -1,0 +1,331 @@
+[
+    {
+        "id": "5ffffc09647619d6",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "26eda981293d784b",
+        "type": "inject",
+        "z": "5ffffc09647619d6",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 220,
+        "wires": [
+            [
+                "50ecd8e67cd1cb89",
+                "72bb988ae5c4c861",
+                "01417c087a8c776e",
+                "c8ac9cad9ec7f44d"
+            ]
+        ]
+    },
+    {
+        "id": "fda3bb658db79dbc",
+        "type": "rbe",
+        "z": "5ffffc09647619d6",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 530,
+        "y": 140,
+        "wires": [
+            [
+                "571802dfc79a12a5"
+            ]
+        ]
+    },
+    {
+        "id": "50ecd8e67cd1cb89",
+        "type": "moment",
+        "z": "5ffffc09647619d6",
+        "name": "",
+        "topic": "",
+        "input": "payload",
+        "inputType": "msg",
+        "inTz": "Europe/Paris",
+        "adjAmount": 0,
+        "adjType": "days",
+        "adjDir": "add",
+        "format": "DD/MM/YY HH:mm:ss",
+        "locale": "en-US",
+        "output": "payload",
+        "outputType": "msg",
+        "outTz": "Europe/Paris",
+        "x": 340,
+        "y": 260,
+        "wires": [
+            [
+                "fe0dcd862897dc67",
+                "fda3bb658db79dbc"
+            ]
+        ]
+    },
+    {
+        "id": "72bb988ae5c4c861",
+        "type": "moment",
+        "z": "5ffffc09647619d6",
+        "name": "",
+        "topic": "",
+        "input": "payload",
+        "inputType": "msg",
+        "inTz": "Europe/Paris",
+        "adjAmount": 0,
+        "adjType": "days",
+        "adjDir": "add",
+        "format": "dddd, MMMM Do YYYY, h:mm:ss a",
+        "locale": "en-US",
+        "output": "payload",
+        "outputType": "msg",
+        "outTz": "Europe/Paris",
+        "x": 340,
+        "y": 340,
+        "wires": [
+            [
+                "441008b831718bf2",
+                "b6a8c7ef751645c3"
+            ]
+        ]
+    },
+    {
+        "id": "441008b831718bf2",
+        "type": "ui-text",
+        "z": "5ffffc09647619d6",
+        "group": "cc60a55293c879a8",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Date Time Format 2",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 560,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "fe0dcd862897dc67",
+        "type": "debug",
+        "z": "5ffffc09647619d6",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "571802dfc79a12a5",
+        "type": "ui-text",
+        "z": "5ffffc09647619d6",
+        "group": "cc60a55293c879a8",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Date Time Format 1",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 680,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "01417c087a8c776e",
+        "type": "debug",
+        "z": "5ffffc09647619d6",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 300,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "c8ac9cad9ec7f44d",
+        "type": "ui-text",
+        "z": "5ffffc09647619d6",
+        "group": "cc60a55293c879a8",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "EPOCH",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 300,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b6a8c7ef751645c3",
+        "type": "debug",
+        "z": "5ffffc09647619d6",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "cc60a55293c879a8",
+        "type": "ui-group",
+        "name": "Group 1",
+        "page": "139c232261529992",
+        "width": 6,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": true,
+        "disabled": false,
+        "groupType": "default"
+    },
+    {
+        "id": "139c232261529992",
+        "type": "ui-page",
+        "name": "Page 1",
+        "ui": "adb7031d6d92daaa",
+        "path": "/page1",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "7c87a1a467a9f5cd",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": 0,
+                "cols": 3
+            },
+            {
+                "name": "Tablet",
+                "px": 576,
+                "cols": 6
+            },
+            {
+                "name": "Small Desktop",
+                "px": 768,
+                "cols": 9
+            },
+            {
+                "name": "Desktop",
+                "px": 1024,
+                "cols": 12
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "adb7031d6d92daaa",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "7c87a1a467a9f5cd",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#0094CE",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "2945393c83b17032",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-moment": "5.0.0",
+            "@flowfuse/node-red-dashboard": "1.29.0"
+        }
+    }
+]
