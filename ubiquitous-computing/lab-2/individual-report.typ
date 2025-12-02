@@ -6,6 +6,8 @@
 
 Vianney Hervy
 
+All the work done here (along with the flows as JSON) is available on my GitHub#footnote[#link("https://github.com/sully-vian/HTWG/tree/main/ubiquitous-computing/lab-2")].
+
 = Exercise 1
 
 #image("assets/exercise-1.png")
@@ -42,5 +44,38 @@ Of course, the debug nodes also print the displayed content in the debug window:
 
 = Exercise 5
 
-#image("assets/exercise-4-bis.png")
+#image("assets/exercise-5.png")
+
+This flow is sensibly more complex asthe displayed information comes from two different sources: the timestamp and the Open-Meteo weather API#footnote[https://github.com/sully-vian/HTWG/tree/main/ubiquitous-computing/lab-2].
+
+The weather flow goes as such:
+
+- *Change node:* Set `msg.payload` to "Konstanz" (or the city of your choice)
+- *HTTP request node:* Fetch the city GPS coordinates with the following url: `https://geocoding-api.open-meteo.com/v1/search?name={{payload}}&count=1`
+- *Change node:* Pick up the fetched values and bring them to the message's payload's root for easier access.
+- *HTTP request node:* Fetch the weather data with the acquired GPS coordinates: `https://api.open-meteo.com/v1/forecast?latitude={{payload.latitude}}&longitude={{payload.longitude}}&current=temperature_2m,relative_humidity_2m`
+- *Dashboard nodes:* Displatch the fetched information to the different dashboard nodes.
+
+#stack(
+  dir: ltr,
+  spacing: 10%,
+  figure(image("assets/exercise-5-bis.png", width: 45%), caption: [Configuration of the second change node]),
+  figure(
+    image(
+      "assets/exercise-5-ter.png",
+      width: 45%,
+    ),
+    caption: [Configuration of the gauge node],
+  ),
+)
+
+Concerning the "The weather in ..." sentence, I used a template node with the following template which I then plugged into a regular dashboard text node.
+
+#image("assets/exercise-5-quater.png")
+
+I didn't manage to find a service that provides textual information such as the "cloudiness" shown in the subject example.
+
+The resulting dashboard after a few hours of gathering data (weather API kicked me out and hid the temperature gauge value):
+
+#image("assets/exercise-5-quiquies.png")
 
