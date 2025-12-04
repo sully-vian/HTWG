@@ -3,59 +3,42 @@
 
 void setup() {
 
-  pinMode(LEDB, OUTPUT);
-  pinMode(LEDR,OUTPUT);
-  pinMode(LEDG,OUTPUT);
+    pinMode(LEDB, OUTPUT);
+    pinMode(LEDR, OUTPUT);
+    pinMode(LEDG, OUTPUT);
 
-  if (!IMU.begin()) {
-
-    Serial.println("Failed to initialize IMU!");
-
-    while (1);
-
-  }
-
-
+    if (!IMU.begin()) {
+        Serial.println("Failed to initialize IMU!");
+        while (1)
+            ;
+    }
 }
 
+int temp_deg = 0; // default value
+
 void loop() {
-  if (IMU.temperatureAvailable())
+    if (IMU.temperatureAvailable()) {
 
-  {
+        IMU.readTemperature(temp_deg);
 
-    int temperature_deg = 0;
+        Serial.print("LSM6DSOX Temp = ");
+        Serial.print(temp_deg - 3);
+        Serial.println(" °C");
 
-    IMU.readTemperature(temperature_deg);
+        temp_deg = temp_deg - 3;
 
-
-    Serial.print("LSM6DSOX Temperature = ");
-
-    Serial.print(temperature_deg-3);
-
-    Serial.println(" °C");
-
-    temperature_deg=temperature_deg-3;
-
-    if(temperature_deg>=32){
-      digitalWrite(LEDR,HIGH);
-      digitalWrite(LEDG,LOW);
-      digitalWrite(LEDB,LOW);
+        if (temp_deg >= 32) { // red
+            digitalWrite(LEDR, HIGH);
+            digitalWrite(LEDG, LOW);
+            digitalWrite(LEDB, LOW);
+        } else if (temp_deg > 20 && temp_deg < 32) { // green
+            digitalWrite(LEDR, LOW);
+            digitalWrite(LEDG, HIGH);
+            digitalWrite(LEDB, LOW);
+        } else { // blue
+            digitalWrite(LEDR, LOW);
+            digitalWrite(LEDG, LOW);
+            digitalWrite(LEDB, HIGH);
+        }
     }
-        
-    else
-      if(temperature_deg>20 && temperature_deg<32){
-         digitalWrite(LEDR,LOW);
-          digitalWrite(LEDG,HIGH);
-          digitalWrite(LEDB,LOW);
-      }
-       
-    else{
-      digitalWrite(LEDR,LOW);
-      digitalWrite(LEDG,LOW);
-      digitalWrite(LEDB,HIGH);
-    }
-        
-
-  }
-
 }
