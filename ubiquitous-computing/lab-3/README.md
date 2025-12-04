@@ -1,4 +1,4 @@
-# Lab 2: Introduction to Node-RED
+    # Lab 3: End-to-end project with Node-RED
 
 
 To start the Node-RED server, run:

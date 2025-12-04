@@ -1,0 +1,88 @@
+[
+    {
+        "id": "a9d6674f6dea7a1e",
+        "type": "tab",
+        "label": "Exercise 3",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "0e332cb2d8227e4f",
+        "type": "mqtt in",
+        "z": "a9d6674f6dea7a1e",
+        "name": "Temperature",
+        "topic": "",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "931f38e549d5e011"
+            ]
+        ]
+    },
+    {
+        "id": "931f38e549d5e011",
+        "type": "debug",
+        "z": "a9d6674f6dea7a1e",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 370,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "dc6497bbcd94b80e",
+        "type": "serial in",
+        "z": "a9d6674f6dea7a1e",
+        "name": "COM10",
+        "serial": "",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "6751a3c974ec136f"
+            ]
+        ]
+    },
+    {
+        "id": "6751a3c974ec136f",
+        "type": "mqtt out",
+        "z": "a9d6674f6dea7a1e",
+        "name": "Temperature",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "",
+        "x": 370,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "6be865c4d1708f16",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-serialport": "2.0.3"
+        }
+    }
+]
