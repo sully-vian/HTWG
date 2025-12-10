@@ -21,7 +21,7 @@
 
 If the GND pin is not working, use your finger :/.
 
-## Exercese 2
+## Exercise 2
 
 - PLug Arduino board
 - Upload sketch to Arduini board:
