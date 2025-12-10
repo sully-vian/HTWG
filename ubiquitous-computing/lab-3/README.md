@@ -41,5 +41,23 @@ If the GND pin is not working, use your finger :/.
 
 ## Exercise 3
 
-TODO
+Username: node-red \
+Password: UBI-lab-3
+
+- PLug Arduino board
+- Upload sketch to Arduini board:
+    ```bash
+    arduino-cli compile --fqbn arduino:mbed:nanorp2040connect --port /dev/ttyACM0 --upload ./Exercise3/Exercise3.ino
+    ```
+- Start Node-RED an open browser
+    ```bash
+    node-red Exercise3/exercise-3.json
+    ```
+- Maybe need to re-enter credentials in the "Security" tab of the mqtt-broker configuration node
+- Place (heated) finger on board or board on radiator to see the temperature change
+- Show the output from the board:
+    ```bash
+    arduino-cli monitor -p /dev/ttyACM0
+    ```
+- Show the [configuration of the Datacake device](https://app.datacake.de/htwg-10/devices/d/315db159-62c9-4263-9c1b-75c66a7ec3bb/t/configuration) and the fact that the MQTT integration is now a paid feature.
 

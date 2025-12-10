@@ -15,6 +15,7 @@
 #set document(author: "Vianney Hervy", title: [Ubiquitous Computing - Lab 3: Node-RED])
 #set page(numbering: "1")
 #set heading(numbering: "1.")
+#set par(first-line-indent: (amount: 1em, all: true))
 
 #title()
 
@@ -52,7 +53,12 @@ Below is the final dashboard after a few minutes of heating then cooling the Ard
 
 = Exercise 3
 
-TODO
+This exercise's goal is to use a third element in the information chain: cloud software. The data is collected by the Arduino board's sensor as in the previous exercise (same code and serial in node), It is then sent to the MQTT broker through a dedicated node. Another dedicated node reads the data from the MQTT broker and outputs it to the debug console.
 
-#framed-code("cpp", read("Exercise3/Exercise3.ino"))
+All nodes are on the same Node-RED computer, but the flow is seperated in two distinct components that don't directly communicate. This means they could be running on two different instances anywhere in the world. For instance one would be in a patient's home and the other at a hospital or a data collection center.
 
+#two("Exercise3/flow.png", "Exercise3/fields.png")
+
+I believe everyone had an issue with the Datacake part of this exercise. Indeed, the MQTT integration service is now a paid plan feature.
+
+#align(center, image("Exercise3/mqtt-integration.png", width: 70%))
