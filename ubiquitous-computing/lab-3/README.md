@@ -1,11 +1,11 @@
 # Lab 3: End-to-end project with Node-RED
 
-## Exercice 1
+## Exercise 1
 
 - Plug Arduino board
 - Upload sketch to Arnuino board:
     ```bash
-    arduino-cli compile --fqbn arduino:mbed:nanorp2040connect --port /dev/ttyACM0 --upload ./Exercice1/Exercice1.ino
+    arduino-cli compile --fqbn arduino:mbed:nanorp2040connect --port /dev/ttyACM0 --upload ./Exercise1/Exercise1.ino
     ```
 - Start Node-RED and open browser
     ```bash
