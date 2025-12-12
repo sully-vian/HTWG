@@ -4,7 +4,6 @@
   #line(length: 100%, stroke: 0.1pt)
 ]
 
-#let cent(content) = align(center, content)
 #let two(img-1, img-2) = stack(
   dir: ltr,
   spacing: 10%,
@@ -59,6 +58,21 @@ All nodes are on the same Node-RED computer, but the flow is seperated in two di
 
 #two("Exercise3/flow.png", "Exercise3/fields.png")
 
-I believe everyone had an issue with the Datacake part of this exercise. Indeed, the MQTT integration service is now a paid plan feature.
+The next step was to create an online dashboard that could be accessed easier than the Node-RED one from the other exercises. For that, we use Datacake with integrated MQTT to fetch data from the HiveMQ cluster.
+
+
+At first, I had an issue with the Datacake part of this exercise. Indeed, I reached a paywall when trying to activate the MQTT integration feature.
 
 #align(center, image("Exercise3/mqtt-integration.png", width: 70%))
+
+But another page allowed me to configure the integration for free, as expected in the tutorial. An encoder and decoder are required for this part. Here are the functions used adapted from the provided dummies.
+
+#framed-code("js", read("Exercise3/encoder.js"))
+#framed-code("js", read("Exercise3/decoder.js"))
+
+In the end, I created a Downlink widget on the dashboard and connected it to the previous configurated component. The dashboard also includes a history of the stored temperature values.
+
+#two("Exercise3/dashboard.png", "Exercise3/history.png")
+
+My Arduino script made a hundred readings per second, which quickly overloaded the service, exceed the datapoint quota and blocking the MQTT server.
+
