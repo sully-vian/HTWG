@@ -2,7 +2,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += \
     RangeQueries \
-    AVLTreeTest
+    KDTreeTest
 
 RangeQueries.file = RangeQueries.pro
-AVLTreeTest.file = AVLTreeTest.pro
+KDTreeTest.file = KDTreeTest.pro

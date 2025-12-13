@@ -7,7 +7,7 @@
 //
 #pragma once
 
-#include "AVLTree.cpp"
+// #include "KDTree.cpp"
 #include <QOpenGLWidget>
 
 class GLWidget : public QOpenGLWidget {
@@ -42,7 +42,7 @@ class GLWidget : public QOpenGLWidget {
         // suppose all x are different
         bool operator<(const SweepEvent &other) const { return x < other.x; }
     };
-    using SweepLine = AVLTree<qreal, const OLine *>;
+    // using SweepLine = KDTree<qreal, const OLine *>;
 
     void clearBackground(); // clear background with backColor
     QPointF transformPosition(QPoint p);

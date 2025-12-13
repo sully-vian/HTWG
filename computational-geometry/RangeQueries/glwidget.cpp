@@ -145,20 +145,21 @@ void GLWidget::computeIntersections() {
     std::sort(q.begin(), q.end());
 
     // key: y-coordinate
-    SweepLine *l = nullptr; // list of active segments, sorted by y
+    // SweepLine *l = nullptr; // list of active segments, sorted by y
     // for instead of while because why not
     for (const SweepEvent &e : q) {
         switch (e.type) {
             case SweepEvent::Start:
-                SweepLine::insert(l, e.line->y1(), e.line);
+                //          SweepLine::insert(l, e.line->y1(), e.line);
                 break;
             case SweepEvent::End:
-                SweepLine::remove(l, e.line->y1());
+                //           SweepLine::remove(l, e.line->y1());
                 break;
             case SweepEvent::Vertical:
                 qreal yMin = qMin(e.line->y1(), e.line->y2());
                 qreal yMax = qMax(e.line->y1(), e.line->y2());
-                SweepLine::range(l, yMin, yMax, reportIntersection(e));
+                //          SweepLine::range(l, yMin, yMax,
+                //          reportIntersection(e));
                 break;
         }
     }

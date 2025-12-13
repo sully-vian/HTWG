@@ -1,8 +1,8 @@
 TEMPLATE = app
-TARGET   = avlTreeTest
+TARGET   = kdTreeTest
 CONFIG  += console c++17
 
 DESTDIR = ./debug
 OBJECTS_DIR = debug
 
-SOURCES += avlTreeTest.cpp
+SOURCES += kdTreeTest.cpp
