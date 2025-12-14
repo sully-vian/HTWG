@@ -19,7 +19,7 @@ class GLWidget : public QOpenGLWidget {
     void continueRequest();
   public slots:
     void showPartition(bool toggled);
-    void resetSelection();
+    void useInsert(bool toggled);
 
   protected:
     void paintGL();
@@ -35,11 +35,13 @@ class GLWidget : public QOpenGLWidget {
     QPointF transformPosition(QPoint p);
     double aspectx, aspecty;
     float pointSize, lineWidth, backColor;
+
+    void updateTree();
     using Tree = KDTree<QPointF>;
 
     int numPoints;
-    QPointF point1; // first point of selection
-    QPointF point2; // second point of selection
+    QPointF pressPoint; // the last mouse button press point
+    QPointF mousePoint; // the point at the current mouse position
     QList<QPointF> pointList;
     Tree *pointTree;
 
@@ -47,4 +49,5 @@ class GLWidget : public QOpenGLWidget {
     QList<QPointF> selectionList;
 
     bool showPartitionLines = false;
+    bool insert = false;
 };

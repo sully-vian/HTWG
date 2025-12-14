@@ -20,14 +20,28 @@ template <PointConcept P> class KDTree {
   public:
     using CoordType = std::remove_cvref_t<decltype(std::declval<P>().x())>;
 
-    KDTree() {}
     KDTree(P point) : point(point), left(nullptr), right(nullptr) {}
 
-    template <typename Container> static KDTree *build(Container &elements) {
+    template <typename Container>
+    KDTree(Container &elements) : left(nullptr), right(nullptr) {
         if (elements.empty()) {
-            return nullptr;
+            throw std::invalid_argument(
+                "Cannot construct KDTree from an empty container.");
         }
-        return buildInternal(elements, 0);
+        int depth = 0;
+
+        auto comparator = [](const P &a, const P &b) { // compare x (depth 0)
+            return a.x() < b.x();
+        };
+        std::sort(elements.begin(), elements.end(), comparator);
+        size_t mid = elements.size() / 2;
+        this->point = elements[mid];
+
+        std::vector<P> leftElts(elements.begin(), elements.begin() + mid);
+        std::vector<P> rightElts(elements.begin() + mid + 1, elements.end());
+
+        this->left = buildInternal(leftElts, depth + 1);
+        this->right = buildInternal(rightElts, depth + 1);
     }
 
     static bool insert(KDTree *&tree, P point) {
@@ -37,6 +51,9 @@ template <PointConcept P> class KDTree {
     static void range(KDTree *tree, CoordType minX, CoordType minY,
                       CoordType maxX, CoordType maxY,
                       const std::function<void(const P &)> &visit) {
+        if (!tree) {
+            return;
+        }
         rangeInternal(tree, minX, minY, maxX, maxY, 0, visit);
     }
 
@@ -45,6 +62,9 @@ template <PointConcept P> class KDTree {
         CoordType maxY,
         const std::function<void(const P &, int, CoordType, CoordType,
                                  CoordType, CoordType)> &visit) {
+        if (!tree) {
+            return;
+        }
         traversePartitionInternal(tree, minX, maxX, minY, maxY, 0, visit);
     }
 

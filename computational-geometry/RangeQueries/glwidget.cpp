@@ -76,10 +76,10 @@ void GLWidget::paintGL() {
     glEnd();
 
     // draw selection
-    float x1 = point1.x();
-    float x2 = point2.x();
-    float y1 = point1.y();
-    float y2 = point2.y();
+    float x1 = pressPoint.x();
+    float x2 = mousePoint.x();
+    float y1 = pressPoint.y();
+    float y2 = mousePoint.y();
     float minX = std::min(x1, x2);
     float maxX = std::max(x1, x2);
     float minY = std::min(y1, y2);
@@ -107,22 +107,20 @@ void GLWidget::paintGL() {
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event) {
-    QPointF point = transformPosition(event->pos());
-    if (event->buttons() & Qt::LeftButton) {
-        pointList.append(point);
-        pointTree = Tree::build(pointList);
-    } else if (event->button() == Qt::RightButton) {
-        selecting = true;
-        point1 = point;
-        point2 = point;
-        selectionList.clear();
+    if (event->buttons() != Qt::LeftButton) {
+        return;
     }
+
+    pressPoint = transformPosition(event->pos());
+    mousePoint = pressPoint;
+    selecting = true;
+    selectionList.clear(); // clear previous results
     update();
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     if (selecting) {
-        point2 = transformPosition(event->pos());
+        mousePoint = transformPosition(event->pos());
         update();
     } else {
         // pass to QWidget
@@ -131,17 +129,26 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event) {
-    QPointF point = transformPosition(event->pos());
-    if (event->button() == Qt::RightButton) {
-        point2 = point;
-        selecting = false;
-        selectionList.clear();
-        float minX = std::min(point1.x(), point2.x());
-        float maxX = std::max(point1.x(), point2.x());
-        float minY = std::min(point1.y(), point2.y());
-        float maxY = std::max(point1.y(), point2.y());
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
 
+    mousePoint = transformPosition(event->pos());
+    selecting = false;
+    float dist2 = QVector2D(mousePoint - pressPoint).lengthSquared();
+
+    if (dist2 < 0.01) { // click: new point
+        pointList.append(mousePoint);
+        updateTree();
+        pressPoint = mousePoint;
         selectionList.clear();
+    } else { // drag: selection
+        selectionList.clear();
+        float minX = std::min(pressPoint.x(), mousePoint.x());
+        float maxX = std::max(pressPoint.x(), mousePoint.x());
+        float minY = std::min(pressPoint.y(), mousePoint.y());
+        float maxY = std::max(pressPoint.y(), mousePoint.y());
+
         Tree::range(pointTree, minX, minY, maxX, maxY,
                     [&](const QPointF &p) { selectionList.append(p); });
     }
@@ -153,12 +160,25 @@ void GLWidget::showPartition(bool toggled) {
     update();
 }
 
-void GLWidget::resetSelection() {
-    selectionList.clear();
-    selecting = false;
-    point1 = QPointF();
-    point2 = QPointF();
+void GLWidget::useInsert(bool toggled) {
+    insert = toggled;
+    if (insert) { // re-insert everything
+        pointTree = nullptr;
+        for (const QPointF &point : pointList) {
+            Tree::insert(pointTree, point);
+        }
+    } else {
+        updateTree();
+    }
     update();
+}
+
+void GLWidget::updateTree() {
+    if (insert) {
+        Tree::insert(pointTree, mousePoint);
+    } else {
+        pointTree = new Tree(pointList);
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -179,6 +199,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
             pointList.clear();
             selecting = false;
             selectionList.clear();
+            pointTree = nullptr;
             break;
         default:
             QWidget::keyPressEvent(event);

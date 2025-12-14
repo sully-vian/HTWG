@@ -149,8 +149,8 @@ int main() {
             CHECK(tree, IKDTree::validate(tree));
         }
     }
-    { // test build
-        IKDTree *tree = IKDTree::build(points);
+    { // test vect constr
+        IKDTree *tree = new IKDTree(points);
         CHECK(tree, IKDTree::validate(tree));
     }
     {                // test range query
@@ -166,7 +166,7 @@ int main() {
             {5,  -1}  // OUT (Too low)
         };
 
-        IKDTree *tree = IKDTree::build(points);
+        IKDTree *tree = new IKDTree(points);
         CHECK(tree, IKDTree::validate(tree));
 
         std::vector<QPointF> found;
@@ -186,7 +186,7 @@ int main() {
         CHECK(tree, !contains(found, {-2, 3}));
     }
     {
-        IKDTree *tree = IKDTree::build(points);
+        IKDTree *tree = new IKDTree(points);
         std::ofstream ofs("tree.dot");
         ofs << (tree->toDot());
         ofs.close();
