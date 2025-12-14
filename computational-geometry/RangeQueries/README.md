@@ -2,8 +2,8 @@
 
 - [x] Implement the 2D-Tree data structure
 - [x] Test the 2D-Tree data structure
-- [ ] Implement the interactive construction of the 2D-Tree
-- [ ] Implement interactive range search for rectangular query
+- [x] Implement the interactive construction of the 2D-Tree
+- [x] Implement interactive range search for rectangular query
 
 ## Commands
 
