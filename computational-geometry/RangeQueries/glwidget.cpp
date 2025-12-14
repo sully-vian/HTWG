@@ -13,9 +13,27 @@
 #include <QtMath>
 #include <iostream>
 
+void drawPartitionLines(const QPointF &p, int depth, float minX, float maxX,
+                        float minY, float maxY) {
+    glColor3f(0.5f, 0.5f, 0.5f);
+    if (depth % 2 == 0) { // vertical split (x-axis)
+        // Draw vertical line restricted by current Y bounds
+        glBegin(GL_LINES);
+        glVertex2f(p.x(), minY);
+        glVertex2f(p.x(), maxY);
+        glEnd();
+    } else { // horizontal split (y-axis)
+        // Draw horizontal line restricted by current X bounds
+        glBegin(GL_LINES);
+        glVertex2f(minX, p.y());
+        glVertex2f(maxX, p.y());
+        glEnd();
+    }
+}
+
 GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     pointSize = 20.0f;
-    lineWidth = 5.0f;
+    lineWidth = 4.0f;
     backColor = 0.6f;
     setMouseTracking(true);
 }
@@ -33,6 +51,11 @@ void GLWidget::paintGL() {
     glVertex2f(0.0f, -1.0f);
     glVertex2f(0.0f, 1.0f);
     glEnd();
+
+    if (showPartitionLines) {
+        Tree::traversePartition(pointTree, -aspectx, aspectx, -aspecty, aspecty,
+                                drawPartitionLines);
+    }
 
     // draw point list
     glColor3f(1.0f, 0.2f, 0.2f);
@@ -126,7 +149,8 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void GLWidget::showPartition(bool toggled) {
-    std::cout << "toggled: " << toggled << std::endl;
+    showPartitionLines = toggled;
+    update();
 }
 
 void GLWidget::resetSelection() {

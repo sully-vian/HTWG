@@ -45,4 +45,6 @@ class GLWidget : public QOpenGLWidget {
 
     bool selecting = false;
     QList<QPointF> selectionList;
+
+    bool showPartitionLines = false;
 };

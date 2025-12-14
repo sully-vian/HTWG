@@ -40,6 +40,14 @@ template <PointConcept P> class KDTree {
         rangeInternal(tree, minX, minY, maxX, maxY, 0, visit);
     }
 
+    static void traversePartition(
+        KDTree *tree, CoordType minX, CoordType maxX, CoordType minY,
+        CoordType maxY,
+        const std::function<void(const P &, int, CoordType, CoordType,
+                                 CoordType, CoordType)> &visit) {
+        traversePartitionInternal(tree, minX, maxX, minY, maxY, 0, visit);
+    }
+
     static bool validate(KDTree *tree) {
         if (!tree) {
             return true;
@@ -233,6 +241,36 @@ template <PointConcept P> class KDTree {
         if (boxMax >= nodeCoord) {
             rangeInternal(tree->right, minX, minY, maxX, maxY, depth + 1,
                           visit);
+        }
+    }
+
+    static void traversePartitionInternal(
+        KDTree *tree, CoordType minX, CoordType maxX, CoordType minY,
+        CoordType maxY, int depth,
+        const std::function<void(const P &, int, CoordType, CoordType,
+                                 CoordType, CoordType)> &visit) {
+        if (!tree) {
+            return;
+        }
+
+        visit(tree->point, depth, minX, maxX, minY, maxY);
+
+        CoordType splitVal = getCoord(tree->point, depth);
+
+        if (depth % 2 == 0) { // vertical split (x-axis)
+            // Left child gets valid X range: [minX, splitVal]
+            traversePartitionInternal(tree->left, minX, splitVal, minY, maxY,
+                                      depth + 1, visit);
+            // Right child gets valid X range: [splitVal, maxX]
+            traversePartitionInternal(tree->right, splitVal, maxX, minY, maxY,
+                                      depth + 1, visit);
+        } else {
+            // Left child gets valid Y range: [minY, splitVal]
+            traversePartitionInternal(tree->left, minX, maxX, minY, splitVal,
+                                      depth + 1, visit);
+            // Right child gets valid Y range: [splitVal, maxY]
+            traversePartitionInternal(tree->right, minX, maxX, splitVal, maxY,
+                                      depth + 1, visit);
         }
     }
 };
