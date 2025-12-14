@@ -1,51 +1,42 @@
 #include <algorithm>
+#include <concepts>
 #include <functional>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
-template <typename CoordType> struct Point {
-    CoordType x;
-    CoordType y;
-
-    Point(CoordType x, CoordType y) : x(x), y(y) {}
-
-    bool operator==(const Point &other) const {
-        return x == other.x && y == other.y;
-    }
-
-    friend std::ostream &operator<<(std::ostream &os, const Point &point) {
-        return os << "(" << point.x << "," << point.y << ")";
-    }
-
-    /*
-     * Helper that reaturns x on even depths and y otherwise
-     */
-    CoordType getCoord(int depth) const {
-        return (depth % 2) ? this->y : this->x;
-    }
+template <typename T>
+concept PointConcept = requires(T t) {
+    { t.x() } -> std::totally_ordered;
+    { t.y() } -> std::same_as<decltype(t.x())>;
 };
 
-template <typename CoordType> class KDTree {
-  public:
-    KDTree(Point<CoordType> point)
-        : point(point), left(nullptr), right(nullptr) {}
+template <PointConcept P>
+std::ostream &operator<<(std::ostream &os, const P &point) {
+    return os << "(" << point.x() << "," << point.y() << ")";
+}
 
-    static KDTree *build(std::vector<Point<CoordType>> &elements) {
+template <PointConcept P> class KDTree {
+  public:
+    using CoordType = std::remove_cvref_t<decltype(std::declval<P>().x())>;
+
+    KDTree() {}
+    KDTree(P point) : point(point), left(nullptr), right(nullptr) {}
+
+    template <typename Container> static KDTree *build(Container &elements) {
         if (elements.empty()) {
             return nullptr;
         }
         return buildInternal(elements, 0);
     }
 
-    static bool insert(KDTree *&tree, Point<CoordType> point) {
+    static bool insert(KDTree *&tree, P point) {
         return insertInternal(tree, point, 0);
     }
 
-    static void
-    range(KDTree *tree, CoordType minX, CoordType minY, CoordType maxX,
-          CoordType maxY,
-          const std::function<void(const Point<CoordType> &)> &visit) {
+    static void range(KDTree *tree, CoordType minX, CoordType minY,
+                      CoordType maxX, CoordType maxY,
+                      const std::function<void(const P &)> &visit) {
         rangeInternal(tree, minX, minY, maxX, maxY, 0, visit);
     }
 
@@ -63,27 +54,27 @@ template <typename CoordType> class KDTree {
             }
 
             // check current node against x bounds
-            if (minX && tree->point.x < *minX) {
+            if (minX && tree->point.x() < *minX) {
                 std::cerr << "fail minX: " << tree->point << std::endl;
                 return false;
             }
-            if (maxX && tree->point.x >= *maxX) {
+            if (maxX && tree->point.x() >= *maxX) {
                 std::cerr << "fail maxX: " << tree->point << std::endl;
                 return false;
             }
 
             // check current node against y bounds
-            if (minY && tree->point.y < *minY) {
+            if (minY && tree->point.y() < *minY) {
                 std::cerr << "fail minY: " << tree->point << std::endl;
                 return false;
             }
-            if (maxY && tree->point.y >= *maxY) {
+            if (maxY && tree->point.y() >= *maxY) {
                 std::cerr << "fail maxY: " << tree->point << std::endl;
                 return false;
             }
 
             // prepare bounds for children
-            CoordType currentCoord = tree->point.getCoord(depth);
+            CoordType currentCoord = getCoord(tree->point, depth);
             bool okLeft, okRight;
             if (!(depth % 2)) { // splitting on x
                 // x must be < currentCoord. Y bounds stay same.
@@ -93,7 +84,7 @@ template <typename CoordType> class KDTree {
                 okRight = validateRec(tree->right, depth + 1, &currentCoord,
                                       maxX, minY, maxY);
             } else { // splitting on y
-                     // y must be < currentCoord. X bounds stay same.
+                // y must be < currentCoord. X bounds stay same.
                 okLeft = validateRec(tree->left, depth + 1, minX, maxX, minY,
                                      &currentCoord);
                 // y must be >= currentCoord. X bounds stay same.
@@ -155,7 +146,7 @@ template <typename CoordType> class KDTree {
     static void print(const std::string msg) { std::cout << msg << std::endl; }
 
   private:
-    Point<CoordType> point;
+    P point;
     KDTree *left;
     KDTree *right;
 
@@ -163,31 +154,31 @@ template <typename CoordType> class KDTree {
     /* Auxiliary functions */
     /* ------------------- */
 
-    static KDTree *buildInternal(std::vector<Point<CoordType>> &elements,
-                                 int depth) {
+    static CoordType getCoord(P point, int depth) {
+        return (depth % 2) ? point.y() : point.x();
+    }
+
+    template <typename Container>
+    static KDTree *buildInternal(Container &elements, int depth) {
         if (elements.empty()) { // check again to be sure
             return nullptr;
         }
 
-        const std::function<bool(const Point<CoordType> &,
-                                 const Point<CoordType> &)>
-            comparator =
-                [depth](const Point<CoordType> &a, const Point<CoordType> &b) {
-                    if (depth % 2 == 0) {
-                        return a.x < b.x;
-                    } else {
-                        return a.y < b.y;
-                    }
-                };
+        const std::function<bool(const P &, const P &)> comparator =
+            [depth](const P &a, const P &b) {
+                if (depth % 2 == 0) {
+                    return a.x() < b.x();
+                } else {
+                    return a.y() < b.y();
+                }
+            };
         std::sort(elements.begin(), elements.end(), comparator);
         size_t mid = elements.size() / 2;
 
         KDTree *tree = new KDTree(elements[mid]);
 
-        std::vector<Point<CoordType>> leftElts(elements.begin(),
-                                               elements.begin() + mid);
-        std::vector<Point<CoordType>> rightElts(elements.begin() + mid + 1,
-                                                elements.end());
+        std::vector<P> leftElts(elements.begin(), elements.begin() + mid);
+        std::vector<P> rightElts(elements.begin() + mid + 1, elements.end());
 
         tree->left = buildInternal(leftElts, depth + 1);
         tree->right = buildInternal(rightElts, depth + 1);
@@ -195,8 +186,7 @@ template <typename CoordType> class KDTree {
         return tree;
     }
 
-    static bool insertInternal(KDTree *&tree, Point<CoordType> point,
-                               int depth) {
+    static bool insertInternal(KDTree *&tree, P point, int depth) {
         if (!tree) { // reached a null ptr, create leaf
             tree = new KDTree(point);
             return true;
@@ -206,8 +196,8 @@ template <typename CoordType> class KDTree {
         }
 
         // choose which coord to compare depending on depth
-        CoordType pointCoord = point.getCoord(depth);
-        CoordType nodeCoord = tree->point.getCoord(depth);
+        CoordType pointCoord = getCoord(point, depth);
+        CoordType nodeCoord = getCoord(tree->point, depth);
 
         if (pointCoord < nodeCoord) { // descend left
             return insertInternal(tree->left, point, depth + 1);
@@ -216,24 +206,23 @@ template <typename CoordType> class KDTree {
         }
     }
 
-    static void
-    rangeInternal(KDTree *tree, CoordType minX, CoordType minY, CoordType maxX,
-                  CoordType maxY, int depth,
-                  const std::function<void(const Point<CoordType> &)> &visit) {
+    static void rangeInternal(KDTree *tree, CoordType minX, CoordType minY,
+                              CoordType maxX, CoordType maxY, int depth,
+                              const std::function<void(const P &)> &visit) {
         if (!tree) {
             return;
         }
 
         // check if current node is inside the query range
-        if (tree->point.x >= minX && tree->point.x <= maxX &&
-            tree->point.y >= minY && tree->point.y <= maxY) {
+        if (tree->point.x() >= minX && tree->point.x() <= maxX &&
+            tree->point.y() >= minY && tree->point.y() <= maxY) {
             visit(tree->point);
         }
 
         // determine splitting dimension logic
-        CoordType nodeCoord = tree->point.getCoord(depth);
-        CoordType boxMin = Point<CoordType>(minX, minY).getCoord(depth);
-        CoordType boxMax = Point<CoordType>(maxX, maxY).getCoord(depth);
+        CoordType nodeCoord = getCoord(tree->point, depth);
+        CoordType boxMin = (depth % 2) ? minY : minX;
+        CoordType boxMax = (depth % 2) ? maxY : maxX;
 
         // left subtree
         if (boxMin < nodeCoord) {

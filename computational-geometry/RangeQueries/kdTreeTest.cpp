@@ -1,7 +1,8 @@
 #include "KDTree.cpp"
+#include <QPoint>
+#include <QPointF>
 #include <fstream>
 #include <iostream>
-#include <random>
 
 #define CHECK(tree, expr)                                                      \
     do {                                                                       \
@@ -18,14 +19,13 @@
         }                                                                      \
     } while (0)
 
-using IPoint = Point<int>;
-using IKDTree = KDTree<int>;
+using IKDTree = KDTree<QPointF>;
 
 /*
  * >>> import numpy as np
  * >>> np.random.randint(0,1001,size=(100,2))
  */
-std::vector<IPoint> points = {
+std::vector<QPointF> points = {
     {387, 548},
     {992, 882},
     {193, 516},
@@ -129,8 +129,8 @@ std::vector<IPoint> points = {
 };
 
 // helper
-bool contains(const std::vector<IPoint> &list, IPoint point) {
-    for (const IPoint &element : list) {
+bool contains(const std::vector<QPointF> &list, QPointF point) {
+    for (const QPointF &element : list) {
         if (element == point) {
             return true;
         }
@@ -142,7 +142,7 @@ int main() {
     { // test insert
         IKDTree *tree = nullptr;
         for (int i = 0; i < (int)points.size(); i++) {
-            IPoint point = points[i];
+            QPointF point = points[i];
             // std::cout << point << std::endl;
             bool inserted = IKDTree::insert(tree, point);
             CHECK(tree, inserted);
@@ -151,18 +151,10 @@ int main() {
     }
     { // test build
         IKDTree *tree = IKDTree::build(points);
-        // for (int i = 0; i < (int)points.size(); i++) {
-        // IPoint point = points[i];
-        // // std::cout << point << std::endl;
-        // CHECK(tree, IKDTree::validate(tree));
-        // }
-
         CHECK(tree, IKDTree::validate(tree));
     }
-    { // test range query
-        IKDTree *tree = nullptr;
-
-        std::vector<IPoint> points = {
+    {                // test range query
+        std::vector<QPointF> points = {
             {2,  3 }, // IN
             {5,  4 }, // IN (Boundary Max Y)
             {9,  6 }, // OUT (Too right, too high)
@@ -170,21 +162,17 @@ int main() {
             {8,  1 }, // IN (Boundary Max X)
             {7,  2 }, // IN
             {1,  1 }, // IN
-            {-2, 3 }, // OUT (Too left)
+            {-2, 0 }, // OUT (Too left)
             {5,  -1}  // OUT (Too low)
         };
 
-        for (int i = 0; i < (int)points.size(); i++) {
-            IPoint point = points[i];
-            // std::cout << point << std::endl;
-            bool inserted = IKDTree::insert(tree, point);
-            CHECK(tree, inserted);
-            CHECK(tree, IKDTree::validate(tree));
-        }
-        std::vector<IPoint> found;
+        IKDTree *tree = IKDTree::build(points);
+        CHECK(tree, IKDTree::validate(tree));
+
+        std::vector<QPointF> found;
         // x in [0, 8] and y in [0, 4]
         IKDTree::range(tree, 0, 0, 8, 4,
-                       [&](const IPoint &point) { found.push_back(point); });
+                       [&](const QPointF &point) { found.push_back(point); });
 
         // check results
         CHECK(tree, found.size() == 5);
@@ -197,9 +185,8 @@ int main() {
         CHECK(tree, !contains(found, {9, 6}));
         CHECK(tree, !contains(found, {-2, 3}));
     }
-    return 0;
     {
-        IKDTree *tree = nullptr;
+        IKDTree *tree = IKDTree::build(points);
         std::ofstream ofs("tree.dot");
         ofs << (tree->toDot());
         ofs.close();

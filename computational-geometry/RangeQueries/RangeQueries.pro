@@ -1,9 +1,8 @@
-
 TEMPLATE    = app
 TARGET      = RangeQueries
 DESTDIR     = ./debug
 QT          += core opengl widgets gui  openglwidgets
-CONFIG      += debug
+CONFIG      += debug c++20
 DEFINES     += QT_DLL QT_DLL QT_OPENGL_LIB QT_WIDGETS_LIB
 INCLUDEPATH +=  ./GeneratedFiles \
                 . \

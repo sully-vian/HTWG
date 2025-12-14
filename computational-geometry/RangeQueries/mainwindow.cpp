@@ -12,6 +12,10 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass) {
     ui->setupUi(this);
     ui->glwidget->setFocusPolicy(Qt::StrongFocus);
+    QObject::connect(ui->showPartitionButton, &QPushButton::toggled,
+                     ui->glwidget, &GLWidget::showPartition);
+    QObject::connect(ui->resetSelectionButton, &QPushButton::pressed,
+                     ui->glwidget, &GLWidget::resetSelection);
 }
 
 MainWindow::~MainWindow() { delete ui; }

@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET   = kdTreeTest
-CONFIG  += console c++17
+CONFIG  += console c++20
 
 DESTDIR = ./debug
 OBJECTS_DIR = debug

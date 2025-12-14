@@ -34,29 +34,6 @@ void GLWidget::paintGL() {
     glVertex2f(0.0f, 1.0f);
     glEnd();
 
-    // draw lines
-    glBegin(GL_LINES);
-    for (const OLine &oLine : lineList) {
-        if (oLine.orientation() == Qt::Orientation::Vertical) {
-            glColor3f(0.2f, 1.0f, 0.2f);
-        } else {
-            glColor3f(0.2f, 0.2f, 1.0f);
-        }
-        glVertex2f(oLine.x1(), oLine.y1());
-        glVertex2f(oLine.x2(), oLine.y2());
-    }
-    if (pointList.size() % 2) { // waiting for another point
-        const QPointF last = pointList.last();
-        if (last.y() == nextPoint.y()) {
-            glColor3f(0.2f, 1.0f, 0.2f);
-        } else {
-            glColor3f(0.2f, 0.2f, 1.0f);
-        }
-        glVertex2f(last.x(), last.y());
-        glVertex2f(nextPoint.x(), nextPoint.y());
-    }
-    glEnd();
-
     // draw point list
     glColor3f(1.0f, 0.2f, 0.2f);
     glPointSize(pointSize);
@@ -64,112 +41,100 @@ void GLWidget::paintGL() {
     for (const QPointF &point : pointList) {
         glVertex2f(point.x(), point.y());
     }
-    glVertex2f(nextPoint.x(), nextPoint.y());
     glEnd();
 
-    // draw intersections
-    glColor3f(0.0f, 0.0f, 0.0f);
+    // draw selected point list
+    glColor3f(0.2f, 0.2f, 1.0f);
+    glPointSize(pointSize);
     glBegin(GL_POINTS);
-    for (const QPointF &point : intersectionList) {
+    for (const QPointF &point : selectionList) {
         glVertex2f(point.x(), point.y());
     }
     glEnd();
-}
 
-Qt::Orientation orientation(const QLineF &line) {
-    if (line.x1() == line.x2()) {
-        return Qt::Orientation::Horizontal;
-    } else {
-        return Qt::Orientation::Vertical;
-    }
-}
+    // draw selection
+    float x1 = point1.x();
+    float x2 = point2.x();
+    float y1 = point1.y();
+    float y2 = point2.y();
+    float minX = std::min(x1, x2);
+    float maxX = std::max(x1, x2);
+    float minY = std::min(y1, y2);
+    float maxY = std::max(y1, y2);
 
-void GLWidget::mouseMoveEvent(QMouseEvent *event) {
-    const QPointF mousePoint = transformPosition(event->pos());
-    if (numPoints % 2) {
-        // awaiting another point
-        const QPointF last = pointList.last();
-        const qreal dx = qFabs(last.x() - mousePoint.x());
-        const qreal dy = qFabs(last.y() - mousePoint.y());
-        if (dx > dy) { // horizontal segment
-            nextPoint = QPointF(mousePoint.x(), last.y());
-        } else {       // vertical segment
-            nextPoint = QPointF(last.x(), mousePoint.y());
-        }
-    } else {
-        // free placement
-        nextPoint = mousePoint;
-    }
-    update();
+    // translucent fill
+    glEnable(GL_BLEND);
+    glColor4f(0.2f, 0.2f, 0.8f, 0.15f);
+    glBegin(GL_QUADS);
+    glVertex2f(minX, minY);
+    glVertex2f(maxX, minY);
+    glVertex2f(maxX, maxY);
+    glVertex2f(minX, maxY);
+    glEnd();
+
+    // border
+    glColor3f(0.1f, 0.1f, 0.1f);
+    glLineWidth(lineWidth);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(minX, minY);
+    glVertex2f(maxX, minY);
+    glVertex2f(maxX, maxY);
+    glVertex2f(minX, maxY);
+    glEnd();
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event) {
+    QPointF point = transformPosition(event->pos());
     if (event->buttons() & Qt::LeftButton) {
-        QPointF nextEventPoint = QPointF(nextPoint.x(), nextPoint.y());
-        pointList.append(nextEventPoint);
-        numPoints++;
-        if (!(numPoints % 2)) { // add line if even number of points
-            QPointF last = pointList.last();
-            QPointF penultimate = pointList.at(numPoints - 2);
-            OLine oLine = OLine(last, penultimate);
-            lineList.append(oLine);
-
-            std::cout << "computing intersections..." << std::endl;
-            computeIntersections();
-            std::cout << "found " << intersectionList.size() << " intersections"
-                      << std::endl;
-        }
+        pointList.append(point);
+        pointTree = Tree::build(pointList);
+    } else if (event->button() == Qt::RightButton) {
+        selecting = true;
+        point1 = point;
+        point2 = point;
+        selectionList.clear();
     }
-
     update();
 }
 
-void GLWidget::computeIntersections() {
-    intersectionList = QList<QPointF>(); // reset
-    QList<SweepEvent> q; // Init set q with all events sorted by x
-
-    // Create Events
-    for (const OLine &line : lineList) {
-        if (line.orientation() == Qt::Horizontal) {
-            qreal xStart = qMin(line.x1(), line.x2());
-            qreal xEnd = qMax(line.x1(), line.x2());
-            q.append({xStart, SweepEvent::Start, &line});
-            q.append({xEnd, SweepEvent::End, &line});
-        } else {
-            q.append({line.x1(), SweepEvent::Vertical, &line});
-        }
-    }
-
-    // Sort events
-    // comparison operator defined in SweepEvent struct
-    std::sort(q.begin(), q.end());
-
-    // key: y-coordinate
-    // SweepLine *l = nullptr; // list of active segments, sorted by y
-    // for instead of while because why not
-    for (const SweepEvent &e : q) {
-        switch (e.type) {
-            case SweepEvent::Start:
-                //          SweepLine::insert(l, e.line->y1(), e.line);
-                break;
-            case SweepEvent::End:
-                //           SweepLine::remove(l, e.line->y1());
-                break;
-            case SweepEvent::Vertical:
-                qreal yMin = qMin(e.line->y1(), e.line->y2());
-                qreal yMax = qMax(e.line->y1(), e.line->y2());
-                //          SweepLine::range(l, yMin, yMax,
-                //          reportIntersection(e));
-                break;
-        }
+void GLWidget::mouseMoveEvent(QMouseEvent *event) {
+    if (selecting) {
+        point2 = transformPosition(event->pos());
+        update();
+    } else {
+        // pass to QWidget
+        QWidget::mouseMoveEvent(event);
     }
 }
 
-const std::function<void(const double &, const GLWidget::OLine *const &)>
-GLWidget::reportIntersection(const SweepEvent &e) {
-    return [&](const qreal &y, const OLine *const &) {
-        intersectionList.append({e.x, y});
-    };
+void GLWidget::mouseReleaseEvent(QMouseEvent *event) {
+    QPointF point = transformPosition(event->pos());
+    if (event->button() == Qt::RightButton) {
+        point2 = point;
+        selecting = false;
+        selectionList.clear();
+        float minX = std::min(point1.x(), point2.x());
+        float maxX = std::max(point1.x(), point2.x());
+        float minY = std::min(point1.y(), point2.y());
+        float maxY = std::max(point1.y(), point2.y());
+
+        selectionList.clear();
+        Tree::range(pointTree, minX, minY, maxX, maxY,
+                    [&](const QPointF &p) { selectionList.append(p); });
+    }
+    update();
+}
+
+void GLWidget::showPartition(bool toggled) {
+    std::cout << "toggled: " << toggled << std::endl;
+}
+
+void GLWidget::resetSelection() {
+    selectionList.clear();
+    selecting = false;
+    point1 = QPointF();
+    point2 = QPointF();
+    update();
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -187,9 +152,9 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
         case Qt::Key_R:
             std::cout << "Resetting points..." << std::endl;
             numPoints = 0;
-            pointList = QList<QPointF>();
-            lineList = QList<OLine>();
-            intersectionList = QList<QPointF>();
+            pointList.clear();
+            selecting = false;
+            selectionList.clear();
             break;
         default:
             QWidget::keyPressEvent(event);
