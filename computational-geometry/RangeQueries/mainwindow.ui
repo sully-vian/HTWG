@@ -37,6 +37,13 @@
                             </widget>
                         </item>
                         <item>
+                            <widget class="QPushButton" name="showDotButton">
+                                <property name="text">
+                                    <string>Show dot</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
                             <widget class="QPushButton" name="showPartitionButton">
                                 <property name="text">
                                     <string>Show partition</string>

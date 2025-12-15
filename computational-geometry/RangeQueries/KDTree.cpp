@@ -127,7 +127,7 @@ template <PointConcept P> class KDTree {
     /*
      * Returns the string representing the tree according to the DOT syntax
      */
-    std::string toDot() {
+    static std::string toDot(KDTree *tree) {
         std::ostringstream oss;
         oss << "digraph G {\n";
         oss << "\tnode [style=filled];\n";
@@ -166,7 +166,7 @@ template <PointConcept P> class KDTree {
                 traverse(tree->right, depth + 1);
             }
         };
-        traverse(this, 0);
+        traverse(tree, 0);
         oss << "}\n";
         return oss.str();
     };

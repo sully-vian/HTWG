@@ -20,6 +20,7 @@ class GLWidget : public QOpenGLWidget {
   public slots:
     void showPartition(bool toggled);
     void useInsert(bool toggled);
+    void showDot();
 
   protected:
     void paintGL();

@@ -11,6 +11,7 @@
 #include "qevent.h"
 #include <QtGlobal>
 #include <QtMath>
+#include <fstream>
 #include <iostream>
 
 void drawPartitionLines(const QPointF &p, int depth, float minX, float maxX,
@@ -179,6 +180,14 @@ void GLWidget::updateTree() {
     } else {
         pointTree = new Tree(pointList);
     }
+}
+
+void GLWidget::showDot() {
+    std::ofstream ofs("tree.dot");
+    ofs << Tree::toDot(pointTree);
+    ofs.close();
+    std::cout << "Dot writtent to tree.dot" << std::endl;
+    std::system("dot -Tpng tree.dot | feh - &");
 }
 
 //--------------------------------------------------------------------------------------------------------------------

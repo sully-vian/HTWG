@@ -11,7 +11,7 @@
                       << __LINE__ << std::endl;                                \
             if (tree) {                                                        \
                 std::ofstream ofs("tree.dot");                                 \
-                ofs << tree->toDot();                                          \
+                ofs << IKDTree::toDot(tree);                                   \
                 ofs.close();                                                   \
                 std::cout << "Dot writtent to tree.dot" << std::endl;          \
             }                                                                  \
@@ -188,7 +188,7 @@ int main() {
     {
         IKDTree *tree = new IKDTree(points);
         std::ofstream ofs("tree.dot");
-        ofs << (tree->toDot());
+        ofs << (IKDTree::toDot(tree));
         ofs.close();
         std::cout << "Dot writtent to tree.dot" << std::endl;
     }

@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent)
                      ui->glwidget, &GLWidget::showPartition);
     QObject::connect(ui->useInsertButton, &QPushButton::toggled, ui->glwidget,
                      &GLWidget::useInsert);
+    QObject::connect(ui->showDotButton, &QPushButton::pressed, ui->glwidget,
+                     &GLWidget::showDot);
 }
 
 MainWindow::~MainWindow() { delete ui; }
