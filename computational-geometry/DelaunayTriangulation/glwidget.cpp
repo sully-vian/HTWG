@@ -47,10 +47,15 @@ void GLWidget::paintGL() {
     }
 
     delaunayTriangulation();
-    // glBegin(GL_LINE_STRIP);
-    glBegin(GL_LINE_LOOP); // loop to complete hull
-    for (const QPointF &p : hull) {
-        glVertex2f(p.x(), p.y());
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < triangulation.size(); i += 3) {
+        if (i + 2 >= triangulation.size()) {
+            continue;
+        }
+        glVertex2f(triangulation[i].x(), triangulation[i].y());
+        glVertex2f(triangulation[i + 1].x(), triangulation[i + 1].y());
+        glVertex2f(triangulation[i + 2].x(), triangulation[i + 2].y());
     }
     glEnd();
 }
@@ -59,10 +64,6 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     QPointF point = transformPosition(event->pos());
     if (event->buttons() & Qt::LeftButton) {
         pointList.append(point);
-
-        qDebug()
-            << "Implement mousePressEvent for mouse-click-input of points at"
-            << point;
     }
     update();
 }
@@ -98,7 +99,7 @@ double orientation(const QPointF &a, const QPointF &b, const QPointF &c) {
  * Compute Graham's Scan and write result in the `hull` variable.
  */
 void GLWidget::grahamScan() {
-    std::cout << "Starting Graham's scan..." << std::endl;
+    // std::cout << "Starting Graham's scan..." << std::endl;
 
     const int n = pointList.size();
     // copy list
@@ -158,10 +159,156 @@ void GLWidget::grahamScan() {
     hull.append(upperHull);
     hull.append(lowerHull);
 
-    std::cout << "Finished, hull size: " << hull.size() << std::endl;
+    // std::cout << "Finished, hull size: " << hull.size() << std::endl;
 }
 
-void GLWidget::delaunayTriangulation() { grahamScan(); }
+/*
+ * check if p is in the abc triangle
+ * Source:
+ * https://www.baeldung.com/cs/check-if-point-is-in-2d-triangle#bd-orientation-approach
+ */
+bool pointInTriangle(const QPointF &p, const QPointF &a, const QPointF &b,
+                     const QPointF &c) {
+    // vectors
+    QPointF ac = c - a;
+    QPointF ab = b - a;
+    QPointF ap = p - a;
+
+    float acac = QPointF::dotProduct(ac, ac);
+    float acab = QPointF::dotProduct(ac, ab);
+    float acap = QPointF::dotProduct(ac, ap);
+    float abab = QPointF::dotProduct(ab, ab);
+    float abap = QPointF::dotProduct(ab, ap);
+
+    float invDenom = 1 / (acac * abab - acab * acab);
+    float u = (abab * acap - acab * abap) * invDenom;
+    float v = (acac * abap - acab * acap) * invDenom;
+
+    return (u >= 0) && (v >= 0) && (u + v < 1);
+}
+
+/*
+ * check if point is inside circumcircle of a triangle
+ * Source:
+ * https://www.geeksforgeeks.org/dsa/find-if-a-point-lies-inside-outside-or-on-the-circumcircle-of-three-points-a-b-c
+ */
+bool pointInCircumcircle(const QPointF &p, const QPointF &a, const QPointF &b,
+                         const QPointF &c) {
+    // Relative coordinates
+    double adx = a.x() - p.x();
+    double ady = a.y() - p.y();
+    double bdx = b.x() - p.x();
+    double bdy = b.y() - p.y();
+    double cdx = c.x() - p.x();
+    double cdy = c.y() - p.y();
+
+    // Squared distances for the third column of matrix
+    double a2 = adx * adx + ady * ady;
+    double b2 = bdx * bdx + bdy * bdy;
+    double c2 = cdx * cdx + cdy * cdy;
+
+    // compute det for 3x3 w/ Rule of Sarrus
+    double det = adx * (bdy * c2 - cdy * b2) - ady * (bdx * c2 - cdx * b2) +
+                 a2 * (bdx * cdy - cdx * bdy);
+
+    return det > 0; // Returns true if point p is inside the circumcircle
+}
+
+/*
+ * Find triangle containing point p (O(n): bottleneck of algo)
+ * */
+int findContainingTriangle(const QPointF &p, const QList<QPointF> &triangles) {
+    for (int i = 0; i < triangles.size(); i += 3) {
+        if (i + 2 >= triangles.size()) {
+            continue;
+        }
+        if (pointInTriangle(p, triangles[i], triangles[i + 1],
+                            triangles[i + 2])) {
+            return i;
+        }
+    }
+    return -1; // not found
+}
+
+void GLWidget::delaunayTriangulation() {
+    grahamScan();                            // compute convex hull in `hull`
+
+    QList<QPointF> interiorPoints;
+    for (const QPointF &point : pointList) { // collect interior points
+        if (!hull.contains(point)) {
+            interiorPoints.append(point);
+        }
+    }
+
+    // shuffle points with randomizer
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(interiorPoints.begin(), interiorPoints.end(), g);
+
+    // create initial triangulation
+    triangulation.clear();
+    if (!interiorPoints.empty()) {
+        QPointF firstInterior = interiorPoints.first();
+
+        // connect hull points to first interior
+        for (int i = 0; i < hull.size(); i++) { // add 3 triangle summit
+            int next = (i + 1) % hull.size();
+            triangulation.append(hull[i]);
+            triangulation.append(hull[next]);
+            triangulation.append(firstInterior);
+        }
+    }
+
+    // process interior points
+    for (int i = 1; i < interiorPoints.size(); i++) {
+        QPointF p = interiorPoints[i];
+        int triangleIdx = findContainingTriangle(p, triangulation);
+        if (triangleIdx == -1) { // should not happen
+            std::cout << "Warning: could not find containing triangle"
+                      << std::endl;
+            continue;
+        }
+
+        // find triangles that violate the Delaunay conditions
+        QList<int> violatedTriangles;
+        for (int t = 0; t < triangulation.size(); t += 3) {
+            if (t + 2 >= triangulation.size()) {
+                continue;
+            } else if (pointInCircumcircle(p, triangulation[t],
+                                           triangulation[t + 1],
+                                           triangulation[t + 2])) {
+                violatedTriangles.append(t);
+            }
+        }
+
+        // remove violated triangles
+        QList<QPointF> holeBoundary;
+
+        for (int j = violatedTriangles.size() - 1; j >= 0; j--) {
+            int t = violatedTriangles[j];
+            if (t + 2 >= triangulation.size()) {
+                continue;
+            }
+            holeBoundary.append(triangulation[t]);
+            holeBoundary.append(triangulation[t + 1]);
+            holeBoundary.append(triangulation[t + 2]);
+
+            // remove triangle (three times the same because of shift)
+            triangulation.removeAt(t);
+            triangulation.removeAt(t);
+            triangulation.removeAt(t);
+        }
+
+        // retriangulate hole with corners connected to p
+        for (const QPointF &boundPoint : holeBoundary) {
+            if (!holeBoundary.empty()) {
+                triangulation.append(boundPoint);
+                triangulation.append(holeBoundary.first());
+                triangulation.append(p);
+            }
+        }
+    }
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 // There is nothing to be done below this line
@@ -189,7 +336,8 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
 
 void GLWidget::initializeGL() {
     resizeGL(width(), height());
-    glClearColor(backColor, backColor, backColor, 1.0f); // set background color
+    glClearColor(backColor, backColor, backColor,
+                 1.0f); // set background color
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_POINT_SMOOTH);

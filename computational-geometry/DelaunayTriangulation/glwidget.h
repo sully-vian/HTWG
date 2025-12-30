@@ -35,4 +35,5 @@ class GLWidget : public QOpenGLWidget {
 
     QList<QPointF> pointList;
     QList<QPointF> hull;
+    QList<QPointF> triangulation;
 };
