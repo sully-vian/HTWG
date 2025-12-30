@@ -17,10 +17,6 @@ GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     backColor = 0.6f;
 }
 
-enum Algorithm { JARVIS_MARCH, GRAHAMS_SCAN };
-
-Algorithm selectedAlgorithm;
-
 void GLWidget::paintGL() {
     // clear
     clearBackground(); // set background color
@@ -50,16 +46,7 @@ void GLWidget::paintGL() {
         return;
     }
 
-    switch (selectedAlgorithm) {
-        case JARVIS_MARCH:
-            jarvisMarch();
-            break;
-        case GRAHAMS_SCAN:
-            grahamScan();
-            break;
-        default:
-            std::cout << "Please select a computing algorithm" << std::endl;
-    }
+    delaunayTriangulation();
     // glBegin(GL_LINE_STRIP);
     glBegin(GL_LINE_LOOP); // loop to complete hull
     for (const QPointF &p : hull) {
@@ -174,69 +161,7 @@ void GLWidget::grahamScan() {
     std::cout << "Finished, hull size: " << hull.size() << std::endl;
 }
 
-/**
- * Compute Jarvis' March and write result in the `hull` variable.
- */
-void GLWidget::jarvisMarch() {
-    std::cout << "Starting Jarvis' march" << std::endl;
-
-    const int n = pointList.size();
-
-    // copy list
-    QList<QPointF> localPoints = pointList;
-
-    // find lexicographically smallest point
-    const QPointF p1 =
-        *std::min_element(localPoints.begin(), localPoints.end(), comp);
-
-    QList<QPointF> localHull;
-    localHull.append(p1); // add smallest point
-
-    QPointF current = p1; // q1 = p1
-    do {
-        localHull.append(current);
-
-        QPointF bestCandidate; // best candidate for next hull point
-        bool found = false;
-        // pick inital point different than current
-        for (int i = 0; i < n && !found; i++) {
-            QPointF pt = localPoints.at(i);
-            if (pt == current) { // skip
-                continue;
-            }
-            bestCandidate = pt;
-            found = true;
-        }
-        if (!found) {
-            // all points in localPoints are equal to current ??
-            break;
-        }
-
-        for (const QPointF &pt : localPoints) {
-            double o = orientation(current, bestCandidate, pt);
-            // if pt is to the right of line (current-best) then pt is a better
-            // candidate
-            if (o < 0) {
-                bestCandidate = pt;
-            }
-        }
-        current = bestCandidate;
-
-    } while (current != p1);
-
-    hull = localHull;
-    std::cout << "Finished, hull size: " << hull.size() << std::endl;
-}
-
-void GLWidget::radioButton1Clicked() {
-    selectedAlgorithm = JARVIS_MARCH;
-    update();
-}
-
-void GLWidget::radioButton2Clicked() {
-    selectedAlgorithm = GRAHAMS_SCAN;
-    update();
-}
+void GLWidget::delaunayTriangulation() { grahamScan(); }
 
 //--------------------------------------------------------------------------------------------------------------------
 // There is nothing to be done below this line

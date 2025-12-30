@@ -17,8 +17,6 @@ class GLWidget : public QOpenGLWidget {
   signals:
     void continueRequest();
   public slots:
-    void radioButton1Clicked();
-    void radioButton2Clicked();
 
   protected:
     void paintGL();
@@ -30,7 +28,7 @@ class GLWidget : public QOpenGLWidget {
   private:
     void clearBackground(); // clear background with backColor
     void grahamScan();
-    void jarvisMarch();
+    void delaunayTriangulation();
     QPointF transformPosition(QPoint p);
     double aspectx, aspecty;
     float pointSize, lineWidth, backColor;

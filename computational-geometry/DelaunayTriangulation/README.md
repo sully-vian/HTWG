@@ -40,15 +40,15 @@ bear -- make -j1
 // Algorithm Delaunay-Triangulation
 // Input: Set P of n distinct points in the plane.
 // Output: Delaunay-Triangulation D.
-void delaunay(Set<Point> P) {
+void delaunayTriangulation(Set<Point> P) {
     auto ch = CH(P); // convex hull
-    auto rest = shuffle(P\ch); // random perm of of the remaining points
+    auto rest = shuffle(P\ch); // random perm of the remaining points
     auto D = ...;  // compute init trig D by connecting rest[0] to the corners of ch
     ...; // restore the Delaunay conditions
     for (int i = 1, i < rest.size(), i++) {
         Point p = rest[i];
         ...; // find triangle (pi,pj,pk) containing p
-        ...; // find all triangles whose Delaunay-conditions are violated, using the adjacency of triangles
+        auto triangles = ...; // find all triangles whose Delaunay-conditions are violated, using the adjacency of triangles
         ...; // remove these triangles from D leaving a polygonal hole Delta in D
         ...; // connect all corners of Delta to p with edges to re-triangulate the hole Delta;
     }
