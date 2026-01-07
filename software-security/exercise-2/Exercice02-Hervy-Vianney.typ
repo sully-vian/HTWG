@@ -14,6 +14,10 @@
   raw(text, lang: "SQL")
 }
 
+#let gql(text) = {
+  raw(text, lang: "graphql")
+}
+
 #set document(author: "Vianney Hervy", title: [Software Security - Exercice sheet 2])
 #set page(numbering: "1")
 #set heading(numbering: "1.")
@@ -26,6 +30,8 @@ Vianney HERVY
 = Web Application Vulnerabilites (Without Time Constraint)
 
 I picked the niteCTF 2025#footnote[https://ctftime.org/event/2851] event.
+
+#align(center, image("assets/scoreboard.png"))
 
 == Database Reincursion
 
@@ -55,22 +61,50 @@ I now know the column names of the other tables and I discovered a new CITADEL_A
 
 After looking up the SQL syntax again, I found out I can just write #sql("'UNION SELECT secrets,1,1,1 FROM CITADEL_ARCHIVE_2077--") which is short enough and finally shows the flag.
 
-== Byte Double Cross
+== Graph Grief#footnote[This challenge was solved in collaboration with another user, `vietrux`. Naturally, this section draws inspiration from his writeup: #ulink("https://freebee.v1.io.vn/blog/nite-ctf-2025-writeup")]
 
-This challenge is in the "Web3" section. We are given a URL#footnote[https://sepolia.etherscan.io/address/0x1d7E03675b15a6602A14Ff6321A2cc2ea16CF53C] to a smart contract contract.
+This Challenge is in the "Web Exploitation" section. The provided hint is "Legacy XML importer may trigger internal file utilities"
 
-#align(center, image("assets/ethereum.png"))
+Upon accessing the website, it was clear that the backend runs on Node.js, as indicated by the `x-powered-by: Express` header. The site advertised "AetherCorp" GraphQL API services. I attempted to access `/graphql` and found it to be an Apollo Server, but introspection was blocked.
 
-The "Contract" tab holds the contract in Bytecode. By decompiling it, we get the following python script.
+Since introspection was disabled, I sent invalid queries to trigger error messages that might reveal the schema. For example, querying #gql("{ usrs }") returned a suggestion: `Did you mean 'users' ?`. This allowed me to map out available fields: `users`, `profiles`, `orders`, `products`, and `node(id: ID!)`.
 
-//#framed-code("python", read("assets/contract.sol"))
-TODO
+When querying `users`, I noticed a `role` field, with some users having the "admin" role. All IDs were base64 encoded, following the Relay-style global ID standard. Testing different IDs with the `node` query, I discovered a type called `secret`:
 
-The `unknownc91d4ca6`
+#framed-code("graphql", "{ node(id: \"c2VjcmV0OmZsYWc=\") { ... on secret { id flag } } }")
 
-== floating-point guardian
+this returned
 
-This challenge is in the "AI" section. We are given a tcp connection#footnote[ncat --ssl floating.chals.nitectf25.live 1337] and the source of the code executing on that server.
+#framed-code("graphql", "{ \"data\": { \"node\": { \"id\": \"secret:flag\", \"flag\": null } } }")
+
+The `secret:flag` node exists, but the flag value was null. The goal was to retrieve the actual flag value.
+
+The hint suggested a legacy XML importer. I sent a request with `Content-Type: application/xml`:
+
+#framed-code("xml", "<?xml version=\"1.0\"?><root>hello</root>")
+
+The server echoed the text content, indicating XML parsing. I immediately considered XXE (XML External Entity) injection.
+
+Basic XXE attempts were blocked:
+
+- SYSTEM entities: "General SYSTEM entities are not allowed."
+- Localhost access: "Localhost access via SYSTEM entity is not allowed."
+- Only HTTP/HTTPS schemes were allowed.
+
+I set up an external DTD server using Ngrok and tested if the server would fetch and parse external DTDs. It did, but the server also checked the content of the external DTD for blocked schemes like `file://`.
+
+I bypassed the filter by using an absolute path (without `file://`) in the external DTD:
+
+#framed-code("xml", "
+<!ENTITY % file SYSTEM \"/etc/passwd\">
+<!ENTITY content \"%file;\">
+")
+
+This worked ! It allowed me to read `/etc/passwd`. I then located the flag by reading `flag.txt`, which contained the flag.
+
+== Floating-Point Guardian
+
+This challenge is in the "AI" section. We are given a tcp connection#footnote[ncat --ssl floating.chals.nitectf25.live 1337] and the source of the code running on that server.
 
 The program asks multiple questions that can be answered with a number (height, age, heart rate...) and writes these in an array. The array is then passed through a neural network. The output is compared to a secret target value. The goal is to approach that target value as close as possible.
 
@@ -127,8 +161,9 @@ The input is a 1x14 vector, so bruteforcing or groping towards the solution is o
 
 Given that we have the source code, we can reproduce the neural network and optimize the input to minimize the offset. That's what I did, I ported the code from C to Python and used `differenctial_evolution` from `scipy.optimize` to bring the result's offset to $10^(-11)$.
 
-I then wrote the results to the tcp connection and got the challenge's flag.
+I then wrote the results to the tcp connection which recognised me as the master and sent the challenge's flag.
 
 = Known Real-World Software Vulnerabilities
 
 TODO
+
