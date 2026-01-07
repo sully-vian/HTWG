@@ -1,24 +1,39 @@
+[submodule "cloud-application-development/recommendations"]
+	path = cloud-application-development/recommendations
+	url = git@github.com:CADSchwarzwald/recommendations.git
 [submodule "cloud-application-development/schwarzwald"]
 	path = cloud-application-development/schwarzwald
 	url = git@github.com:CADSchwarzwald/schwarzwald.git
 [submodule "cloud-application-development/schwarzwald-backend"]
 	path = cloud-application-development/schwarzwald-backend
 	url = git@github.com:CADSchwarzwald/schwarzwald-backend.git
-[submodule "cloud-application-development/schwarzwald-locust"]
-	path = cloud-application-development/schwarzwald-locust
-	url = git@github.com:CADSchwarzwald/schwarzwald-locust.git
-[submodule "cloud-application-development/schwarzwald-infrastructure"]
-	path = cloud-application-development/schwarzwald-infrastructure
-	url = git@github.com:CADSchwarzwald/schwarzwald-infrastructure.git
-[submodule "cloud-application-development/schwarzwald-submissions"]
-	path = cloud-application-development/schwarzwald-submissions
-	url = git@github.com:CADSchwarzwald/schwarzwald-submissions.git
-[submodule "cloud-application-development/recommendations"]
-	path = cloud-application-development/recommendations
-	url = git@github.com:CADSchwarzwald/recommendations.git
-[submodule "cloud-application-development/schwarzwald-kubernetes"]
-	path = cloud-application-development/schwarzwald-kubernetes
-	url = git@github.com:CADSchwarzwald/schwarzwald-kubernetes.git
+[submodule "cloud-application-development/schwarzwald-booking"]
+	path = cloud-application-development/schwarzwald-booking
+	url = git@github.com:CADSchwarzwald/schwarzwald-booking.git
 [submodule "cloud-application-development/schwarzwald-compose"]
 	path = cloud-application-development/schwarzwald-compose
 	url = git@github.com:CADSchwarzwald/schwarzwald-compose.git
+[submodule "cloud-application-development/schwarzwald-infrastructure"]
+	path = cloud-application-development/schwarzwald-infrastructure
+	url = git@github.com:CADSchwarzwald/schwarzwald-infrastructure.git
+[submodule "cloud-application-development/schwarzwald-kubernetes"]
+	path = cloud-application-development/schwarzwald-kubernetes
+	url = git@github.com:CADSchwarzwald/schwarzwald-kubernetes.git
+[submodule "cloud-application-development/schwarzwald-locust"]
+	path = cloud-application-development/schwarzwald-locust
+	url = git@github.com:CADSchwarzwald/schwarzwald-locust.git
+[submodule "cloud-application-development/schwarzwald-submissions"]
+	path = cloud-application-development/schwarzwald-submissions
+	url = git@github.com:CADSchwarzwald/schwarzwald-submissions.git
+[submodule "cloud-application-development/schwarzwald-feature-flags"]
+	path = cloud-application-development/schwarzwald-feature-flags
+	url = git@github.com:CADSchwarzwald/schwarzwald-feature-flags.git
+[submodule "cloud-application-development/schwarzwald-provisioning"]
+	path = cloud-application-development/schwarzwald-provisioning
+	url = git@github.com:CADSchwarzwald/schwarzwald-provisioning.git
+[submodule "cloud-application-development/schwarzwald-travel-warnings"]
+	path = cloud-application-development/schwarzwald-travel-warnings
+	url = git@github.com:CADSchwarzwald/schwarzwald-travel-warnings.git
+[submodule "cloud-application-development/social"]
+	path = cloud-application-development/social
+	url = git@github.com:CADSchwarzwald/social.git
