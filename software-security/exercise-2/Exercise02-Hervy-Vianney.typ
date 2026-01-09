@@ -4,11 +4,21 @@
   underline(link(url)[#text])
 }
 
-#let framed-code(lang, body) = [
-  #line(length: 100%, stroke: 0.1pt)
-  #raw(body, lang: lang)
-  #line(length: 100%, stroke: 0.1pt)
-]
+#let framed-code(lang, start: none, body) = {
+  show raw.line: it => {
+    if start != none {
+      box(width: 2em)[#(it.number + start - 1)]
+      h(1em)
+    }
+    it.body
+  }
+  set par(first-line-indent: 0pt) // remove indent
+  [
+    #line(length: 100%, stroke: 0.1pt)
+    #raw(body, lang: lang)
+    #line(length: 100%, stroke: 0.1pt)
+  ]
+}
 
 #let sql(text) = {
   raw(text, lang: "SQL")
@@ -18,7 +28,7 @@
   raw(text, lang: "graphql")
 }
 
-#set document(author: "Vianney Hervy", title: [Software Security - Exercice sheet 2])
+#set document(author: "Vianney Hervy", title: [Software Security - Exercise sheet 2])
 #set page(numbering: "1")
 #set heading(numbering: "1.")
 #set par(justify: true, first-line-indent: (amount: 1em, all: true))
@@ -29,7 +39,7 @@ Vianney HERVY
 
 = Web Application Vulnerabilites (Without Time Constraint)
 
-I picked the niteCTF 2025#footnote[https://ctftime.org/event/2851] event.
+I picked the niteCTF 2025#footnote[https://ctftime.org/event/2851] event. The below scoreboard can be found on the event's webpage.
 
 #align(center, image("assets/scoreboard.png"))
 
@@ -159,11 +169,94 @@ The neural network has rejected your identity.
 
 The input is a 1x14 vector, so bruteforcing or groping towards the solution is out of the question.
 
-Given that we have the source code, we can reproduce the neural network and optimize the input to minimize the offset. That's what I did, I ported the code from C to Python and used `differenctial_evolution` from `scipy.optimize` to bring the result's offset to $10^(-11)$.
+Given that we have the source code, we can reproduce the neural network and optimize the input to minimize the offset. That's what I did, I ported the code from C to Python and used `differenctial_evolution` from `scipy.optimize` to bring the result's offset down to $10^(-11)$.
 
-I then wrote the results to the tcp connection which recognised me as the master and sent the challenge's flag.
+I then wrote the results to the tcp connection which recognised me as the master and sent back the challenge's flag.
 
 = Known Real-World Software Vulnerabilities
 
-TODO
+#let data = json("openssl-vulnerabilities.json")
+
+== Known vulnerabilities for the openssl product in 2025#footnote[Source: EUVD's public API]
+
+#table(
+  columns: (auto, auto, auto, auto),
+  align: (center + horizon, center + horizon, center + horizon, left),
+  table.header([*EUVD ID*], [*CVE ID*], [*CVSS*], [*Summary*]),
+  ..for item in data.items {
+    (
+      [#item.id],
+      [#item.aliases],
+      [#item.baseScore],
+      [#item.description.replace("\n", " ").slice(0, 150).slice(15)...],
+    )
+  },
+)
+
+#let selected = data.items.at(4)
+
+I selected the *EUVD-2025-16128* vulnerability#footnote[https://euvd.enisa.europa.eu/vulnerability/EUVD-2025-16128] for the rest of the exercise:
+
+#block(
+  width: 100%,
+  inset: (left: 1em, rest: 0.5em),
+  stroke: (left: 3pt + gray),
+  fill: luma(200),
+  selected.description,
+)
+
+== Source code vulnerability
+
+The vulnerability comes from the `openssl x509` cli application. Specifically, the logic handling the `-addreject` flag was reversed.
+
+The following snippet comes from the `x509.c` file at the `1b20579` commit#footnote[https://github.com/openssl/openssl/blob/1b20579d5c35ca8d3c6e79fb6f5067ad98c47beb/apps/x509.c#L460]. It is part of a switch statement which dispatches the handling depending on the current cli argument. Line `468` explicitely attempts to push `objtmp` to the `trust` stack `reject` stack.
+
+#framed-code(
+  "c",
+  start: 460,
+  "        case OPT_ADDREJECT:
+            if (reject == NULL && (reject = sk_ASN1_OBJECT_new_null()) == NULL)
+                goto end;
+            if ((objtmp = OBJ_txt2obj(opt_arg(), 0)) == NULL) {
+                BIO_printf(bio_err, \"%s: Invalid reject object value %s\\n\",
+                           prog, opt_arg());
+                goto opthelp;
+            }
+            if (!sk_ASN1_OBJECT_push(trust, objtmp))
+                goto end;
+            trustout = 1;
+            break;",
+)
+
+== Vulnerability fix
+
+The fix is simple and can be shown in this GitHub commit#footnote[https://github.com/openssl/openssl/commit/e96d22446e633d117e6c9904cb15b4693e956eaa] which also adds tests.
+
+It involves changing the stack poinyer from `trust` to `reject` to ensure the certification use is correctly categorized as rejected.
+
+#framed-code(
+  "diff",
+  "                           prog, opt_arg());
+                goto opthelp;
+            }
+-           if (!sk_ASN1_OBJECT_push(trust, objtmp))
++           if (!sk_ASN1_OBJECT_push(reject, objtmp))
+                goto end;
+            trustout = 1;
+            break;",
+)
+
+== Type of vulnerability
+
+This vulnearbility is a *CWE-480: Use of Incorrect Operator*#footnote[https://cwe.mitre.org/data/definitions/480.html]. It is described as _"The product accidentally uses the wrong operator, which changes the logic in security-relevant ways."_ and _"These types of errors are generally the result of a typo by the programmer."_ which matches this exact case of copy-paste error.
+
+== What can be learned
+
+Even minor refactoring can induce critical security flaws if code blocks are duplicayed and not carefully adapted to their new context.
+
+Each command-line flag should have a specific test case that verifies it is correctly handled and applied. In this case, a test should have checked if the resulting certificate actually contained a "Rejected Use" extension.
+
+This kind of bugs can't be caught by static analysis tools given that the code "works" but does the opposite of what was intended. On the other hand, they are easily caucht by functional testing and especially regression testing that would check the refactor didn't break anything.
+
+This vulnerability is very specific to the cli tool users, of the version 3.5.0 and with the `-addreject` flag. In fact, it has a low CVSS score (#selected.baseScore) and a low EPSS score (#selected.epss%).
 
