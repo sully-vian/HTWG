@@ -241,9 +241,9 @@ void GLWidget::delaunayTriangulation() {
     }
 
     // shuffle points with randomizer
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(interiorPoints.begin(), interiorPoints.end(), g);
+    std::random_device rand;
+    std::mt19937 generator(rand());
+    std::shuffle(interiorPoints.begin(), interiorPoints.end(), generator);
 
     // create initial triangulation
     triangulation.clear();
@@ -283,8 +283,33 @@ void GLWidget::delaunayTriangulation() {
 
         // remove violated triangles
         QList<QPointF> holeBoundary;
+        QList<QPair<QPointF, QPointF>> boundaryEdges;
+        for (int t : violatedTriangles) {
+            QPair<QPointF, QPointF> edges[3] = {
+                {triangulation[t],     triangulation[t + 1]},
+                {triangulation[t + 1], triangulation[t + 2]},
+                {triangulation[t + 2], triangulation[t]    }
+            };
 
-        for (int j = violatedTriangles.size() - 1; j >= 0; j--) {
+            for (const QPair<QPointF, QPointF> &edge : edges) {
+                // if the edge is in the list, its an internal edge (shared by
+                // two violated triangles)
+                int existingIdx = -1;
+                for (int k = 0; k < boundaryEdges.size(); k++) {
+                    if (boundaryEdges[k] == edge) {
+                        existingIdx = k;
+                        break;
+                    }
+                }
+                if (existingIdx != -1) { // remove internal edge
+                    boundaryEdges.removeAt(existingIdx);
+                } else {
+                    boundaryEdges.append(edge);
+                }
+            }
+        }
+
+        /*for (int j = violatedTriangles.size() - 1; j >= 0; j--) {
             int t = violatedTriangles[j];
             if (t + 2 >= triangulation.size()) {
                 continue;
@@ -297,15 +322,13 @@ void GLWidget::delaunayTriangulation() {
             triangulation.removeAt(t);
             triangulation.removeAt(t);
             triangulation.removeAt(t);
-        }
+        }*/
 
         // retriangulate hole with corners connected to p
-        for (const QPointF &boundPoint : holeBoundary) {
-            if (!holeBoundary.empty()) {
-                triangulation.append(boundPoint);
-                triangulation.append(holeBoundary.first());
-                triangulation.append(p);
-            }
+        for (const QPair<QPointF, QPointF> &edge : boundaryEdges) {
+            triangulation.append(edge.first);
+            triangulation.append(edge.second);
+            triangulation.append(p);
         }
     }
 }
