@@ -11,12 +11,52 @@
 #include <QtGui>
 #include <iostream>
 
+#define TWO_PI (2.0f * 3.1415926f)
+#define NUM_SEGMENTS 1024
+
 #define PRINT(x) std::cout << x << std::endl
+
+/*
+ * Returns the circumcenter of the abc triangle
+ */
+QPointF circumCenter(const QPointF &a, const QPointF &b, const QPointF &c) {
+    double x1 = a.x();
+    double y1 = a.y();
+    double x2 = b.x();
+    double y2 = b.y();
+    double x3 = c.x();
+    double y3 = c.y();
+
+    double d = 2.0 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
+
+    double x1sq = x1 * x1 + y1 * y1;
+    double x2sq = x2 * x2 + y2 * y2;
+    double x3sq = x3 * x3 + y3 * y3;
+
+    double ux = (x1sq * (y2 - y3) + x2sq * (y3 - y1) + x3sq * (y1 - y2)) / d;
+    double uy = (x1sq * (x3 - x2) + x2sq * (x1 - x3) + x3sq * (x2 - x1)) / d;
+
+    // circumcenter
+    QPointF center = QPointF(ux, uy);
+    return center;
+}
+
+void drawCircle(float cx, float cy, float radius) {
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < NUM_SEGMENTS; i++) {
+        float theta = TWO_PI * float(i) / float(NUM_SEGMENTS);
+        float x = radius * cosf(theta);
+        float y = radius * sinf(theta);
+        glVertex2f(x + cx, y + cy);
+    }
+    glEnd();
+}
 
 GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     pointSize = 20.0f;
     lineWidth = 5.0f;
     backColor = 0.6f;
+    circleLineWidth = 2.5f;
 }
 
 void GLWidget::paintGL() {
@@ -54,6 +94,18 @@ void GLWidget::paintGL() {
         glVertex2f(p3.x(), p3.y());
         glEnd();
     }
+    if (drawCircles) {
+        glLineWidth(circleLineWidth);
+        for (int t = 0; t < triangulation.size(); t++) {
+            QPointF p1 = std::get<0>(triangulation[t]);
+            QPointF p2 = std::get<1>(triangulation[t]);
+            QPointF p3 = std::get<2>(triangulation[t]);
+            QPointF center = circumCenter(p1, p2, p3);
+            float radius = QLineF(p1, center).length();
+            glColor3f(0.0f, 1.0f, 0.0f); // green
+            drawCircle(center.x(), center.y(), radius);
+        }
+    }
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event) {
@@ -62,8 +114,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
         pointList.append(point);
     }
     if (pointList.size() < 3) {
-        std::cout << "too few point (" << pointList.size() << ") skipped"
-                  << std::endl;
+        PRINT("too few point (" << pointList.size() << ") skipped");
     } else {
         delaunayTriangulation();
     }
@@ -205,25 +256,8 @@ int findContainingTriangle(
  */
 bool pointInCircumcircle(const QPointF &p, const QPointF &a, const QPointF &b,
                          const QPointF &c) {
-    double x1 = a.x();
-    double y1 = a.y();
-    double x2 = b.x();
-    double y2 = b.y();
-    double x3 = c.x();
-    double y3 = c.y();
 
-    double d = 2.0 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
-
-    double x1sq = x1 * x1 + y1 * y1;
-    double x2sq = x2 * x2 + y2 * y2;
-    double x3sq = x3 * x3 + y3 * y3;
-
-    double ux = (x1sq * (y2 - y3) + x2sq * (y3 - y1) + x3sq * (y1 - y2)) / d;
-    double uy = (x1sq * (x3 - x2) + x2sq * (x1 - x3) + x3sq * (x2 - x1)) / d;
-
-    // circumcenter
-    QPointF center = QPointF(ux, uy);
-
+    QPointF center = circumCenter(a, b, c);
     // compute distances to circumcenter
     double radius = QLineF(center, a).length();
     double dist = QLineF(center, p).length();
@@ -254,13 +288,31 @@ void GLWidget::delaunayTriangulation() {
     // Variation from the lecture: use a 1st hull point as starting fan center
     QPointF p1 = hull.first();
 
-    // connect hull points to first interior
-    for (int i = 1; i < hull.size(); i++) { // add 3 triangle summit
+    // connect hull points to selected p1
+    for (int i = 1; i < hull.size() - 1; i++) { // add 3 triangle summit
         int next = (i + 1) % hull.size();
         triangulation.append({p1, hull[i], hull[next]});
     }
+    int fixed = 0;
+    for (int t = 0; t < triangulation.size() - 1; t += 2) {
+        std::tuple<QPointF, QPointF, QPointF> trig1 =
+            triangulation.at(t);     // {p1, pn, pn+1}
+        const std::tuple<QPointF, QPointF, QPointF> trig2 =
+            triangulation.at(t + 1); // {p1, pn+1, pn+2}
+        QPointF pn = std::get<1>(trig1);
+        QPointF pn1 = std::get<2>(trig1);
+        QPointF pn2 = std::get<2>(trig2);
+        // if p1, pn, pn1, pn2 do not respect delaunay condition, flip common
+        // edge
+        if (pointInCircumcircle(p1, pn, pn1, pn2)) {
+            triangulation[t] = {p1, pn, pn2};
+            triangulation[t + 1] = {pn, pn1, pn2};
+            fixed++;
+        }
+    }
+    PRINT("fixed " << fixed << " triangles");
 
-    // 4. Iterate on following interior points
+    // 4. Add interior points one by one
     for (int r = 0; r < interiorPoints.size(); r++) {
         QPointF pr = interiorPoints[r];
 
@@ -268,7 +320,8 @@ void GLWidget::delaunayTriangulation() {
         const int trigIdx = findContainingTriangle(pr, triangulation);
         if (trigIdx == -1) { // pr in no triangle
             // impossible, pr is interior point
-            std::cout << "Impossible point" << std::endl;
+            PRINT("Impossible point");
+            // delaunayTriangulation();
             return;
         }
         const std::tuple<QPointF, QPointF, QPointF> trig =
@@ -277,7 +330,8 @@ void GLWidget::delaunayTriangulation() {
         QPointF pj = std::get<1>(trig);
         QPointF pk = std::get<2>(trig);
 
-        // 6. Find all triangles whose circumcircle contains the new point pr
+        // 6. Find all triangles whose circumcircle contains the new point
+        // pr
         QList<int> violatedIndices;
         QList<QPair<QPointF, QPointF>> allEdges;
         for (int t = 0; t < triangulation.size(); t++) {
@@ -303,8 +357,8 @@ void GLWidget::delaunayTriangulation() {
 
         // 8. connect corners of hole to pr
         // 8a. Identify the boundary edges of the polygonal hole
-        // Bounday edges are those that only appear once (others are shared ->
-        // internal)
+        // Bounday edges are those that only appear once (others are shared
+        // -> internal)
         QList<QPair<QPointF, QPointF>> boundaryEdges;
         for (int j = 0; j < allEdges.size(); j++) {
             bool isShared = false;
@@ -331,6 +385,7 @@ void GLWidget::delaunayTriangulation() {
             triangulation.append({edge.first, edge.second, pr});
         }
     }
+    PRINT(triangulation.size() << " triangles found");
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -342,13 +397,18 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
         case Qt::Key_Escape:
         case Qt::Key_Q:
-            std::cout << "Quitting..." << std::endl;
+            PRINT("Quitting...");
             QApplication::instance()->quit();
             break;
         case Qt::Key_R:
-            std::cout << "Resetting points and hull..." << std::endl;
+            PRINT("Resetting points and hull...");
             pointList = QList<QPointF>();
             hull = QList<QPointF>();
+            break;
+        case Qt::Key_C:
+            drawCircles = !drawCircles;
+            PRINT("toggling view circle: " << drawCircles);
+            update();
             break;
         default:
             QWidget::keyPressEvent(event);
