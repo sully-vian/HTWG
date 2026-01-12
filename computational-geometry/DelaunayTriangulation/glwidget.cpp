@@ -11,6 +11,8 @@
 #include <QtGui>
 #include <iostream>
 
+#define PRINT(x) std::cout << x << std::endl
+
 GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     pointSize = 20.0f;
     lineWidth = 5.0f;
@@ -40,13 +42,6 @@ void GLWidget::paintGL() {
     }
     glEnd();
 
-    if (pointList.size() < 3) {
-        std::cout << "too few point (" << pointList.size() << ") skipped"
-                  << std::endl;
-        return;
-    }
-
-    delaunayTriangulation();
     glColor3f(0.0f, 0.0f, 1.0f);
     for (int t = 0; t < triangulation.size(); t++) {
         glBegin(GL_LINE_LOOP); // lost so much time because this way outside of
@@ -65,6 +60,12 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     QPointF point = transformPosition(event->pos());
     if (event->buttons() & Qt::LeftButton) {
         pointList.append(point);
+    }
+    if (pointList.size() < 3) {
+        std::cout << "too few point (" << pointList.size() << ") skipped"
+                  << std::endl;
+    } else {
+        delaunayTriangulation();
     }
     update();
 }
@@ -100,8 +101,6 @@ double orientation(const QPointF &a, const QPointF &b, const QPointF &c) {
  * Compute Graham's Scan and write result in the `hull` variable.
  */
 void GLWidget::grahamScan() {
-    // std::cout << "Starting Graham's scan..." << std::endl;
-
     const int n = pointList.size();
     // copy list
     QList<QPointF> localPoints = pointList;
@@ -159,62 +158,28 @@ void GLWidget::grahamScan() {
     hull.clear();
     hull.append(upperHull);
     hull.append(lowerHull);
+}
 
-    // std::cout << "Finished, hull size: " << hull.size() << std::endl;
+double triangleArea(const QPointF &a, const QPointF &b, const QPointF &c) {
+    QPointF ab = b - a;
+    QPointF ac = c - a;
+    double cross = ab.x() * ac.y() - ab.y() * ac.x();
+    return 0.5 * qAbs(cross);
 }
 
 /*
- * check if point is inside circumcircle of a triangle
- * Source:
- * https://www.geeksforgeeks.org/dsa/find-if-a-point-lies-inside-outside-or-on-the-circumcircle-of-three-points-a-b-c
- */
-bool pointInCircumcircle(const QPointF &p, const QPointF &a, const QPointF &b,
-                         const QPointF &c) {
-    // Relative coordinates
-    const double adx = a.x() - p.x();
-    const double ady = a.y() - p.y();
-    const double bdx = b.x() - p.x();
-    const double bdy = b.y() - p.y();
-    const double cdx = c.x() - p.x();
-    const double cdy = c.y() - p.y();
-
-    // Squared distances for the third column of matrix
-    const double a2 = adx * adx + ady * ady;
-    const double b2 = bdx * bdx + bdy * bdy;
-    const double c2 = cdx * cdx + cdy * cdy;
-
-    // compute det for 3x3 w/ Rule of Sarrus
-    const double det = adx * (bdy * c2 - cdy * b2) -
-                       ady * (bdx * c2 - cdx * b2) +
-                       a2 * (bdx * cdy - cdx * bdy);
-
-    // point is inside iif sign(det) == sign(orient)
-    return det * orientation(a, b, c) > 0;
-}
-
-/*
- * check if p is in the abc triangle
- * Source:
- * https://www.baeldung.com/cs/check-if-point-is-in-2d-triangle#bd-orientation-approach
+ * Check if p is in the abc triangle
+ * Method: compute sub-triangle areas and compare area sum to maoi triangle area
  */
 bool pointInTriangle(const QPointF &p, const QPointF &a, const QPointF &b,
                      const QPointF &c) {
-    // vectors
-    const QPointF ac = c - a;
-    const QPointF ab = b - a;
-    const QPointF ap = p - a;
+    double abcArea = triangleArea(a, b, c);
+    double pbcArea = triangleArea(p, b, c);
+    double apcArea = triangleArea(a, p, c);
+    double abpArea = triangleArea(a, b, p);
 
-    const float acac = QPointF::dotProduct(ac, ac);
-    const float acab = QPointF::dotProduct(ac, ab);
-    const float acap = QPointF::dotProduct(ac, ap);
-    const float abab = QPointF::dotProduct(ab, ab);
-    const float abap = QPointF::dotProduct(ab, ap);
-
-    const float invDenom = 1 / (acac * abab - acab * acab);
-    const float u = (abab * acap - acab * abap) * invDenom;
-    const float v = (acac * abap - acab * acap) * invDenom;
-
-    return (u >= 0) && (v >= 0) && (u + v < 1);
+    // p in abc iff areas are equal (qFuzzyCompare tolerates small epsilon)
+    return qFuzzyCompare(abcArea, pbcArea + apcArea + abpArea);
 }
 
 /*
@@ -232,6 +197,39 @@ int findContainingTriangle(
         }
     }
     return -1; // not found
+}
+
+/*
+ * Check if point is inside circumcircle of triangle abc
+ * Method: compute circumcenter and compare distances
+ */
+bool pointInCircumcircle(const QPointF &p, const QPointF &a, const QPointF &b,
+                         const QPointF &c) {
+    double x1 = a.x();
+    double y1 = a.y();
+    double x2 = b.x();
+    double y2 = b.y();
+    double x3 = c.x();
+    double y3 = c.y();
+
+    double d = 2.0 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
+
+    double x1sq = x1 * x1 + y1 * y1;
+    double x2sq = x2 * x2 + y2 * y2;
+    double x3sq = x3 * x3 + y3 * y3;
+
+    double ux = (x1sq * (y2 - y3) + x2sq * (y3 - y1) + x3sq * (y1 - y2)) / d;
+    double uy = (x1sq * (x3 - x2) + x2sq * (x1 - x3) + x3sq * (x2 - x1)) / d;
+
+    // circumcenter
+    QPointF center = QPointF(ux, uy);
+
+    // compute distances to circumcenter
+    double radius = QLineF(center, a).length();
+    double dist = QLineF(center, p).length();
+
+    // p in circumcircle if closer to center than a (or b, or c)
+    return dist <= radius;
 }
 
 void GLWidget::delaunayTriangulation() {
@@ -262,7 +260,7 @@ void GLWidget::delaunayTriangulation() {
         triangulation.append({p1, hull[i], hull[next]});
     }
 
-    // 4. Iterate on following unterior points
+    // 4. Iterate on following interior points
     for (int r = 0; r < interiorPoints.size(); r++) {
         QPointF pr = interiorPoints[r];
 
