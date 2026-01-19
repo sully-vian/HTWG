@@ -14,6 +14,8 @@
 #define TWO_PI (2.0f * 3.1415926f)
 #define NUM_SEGMENTS 1024
 
+#define RAND() static_cast<float>(rand()) / static_cast<float>(RAND_MAX)
+
 #define PRINT(x) std::cout << x << std::endl
 
 /*
@@ -73,18 +75,10 @@ void GLWidget::paintGL() {
     glVertex2f(0.0f, 1.0f);
     glEnd();
 
-    // draw point list
-    glColor3f(1.0f, 0.2f, 0.2f);
-    glPointSize(pointSize);
-    glBegin(GL_POINTS);
-    for (const QPointF &p : pointList) {
-        glVertex2f(p.x(), p.y());
-    }
-    glEnd();
-
     glColor3f(0.0f, 0.0f, 1.0f);
     for (int t = 0; t < triangulation.size(); t++) {
-        glBegin(GL_LINE_LOOP); // lost so much time because this way outside of
+        glColor3f(RAND(), RAND(), RAND());
+        glBegin(GL_TRIANGLES); // lost so much time because this way outside of
                                // the loop arghhh
         QPointF p1 = std::get<0>(triangulation[t]);
         QPointF p2 = std::get<1>(triangulation[t]);
@@ -94,7 +88,21 @@ void GLWidget::paintGL() {
         glVertex2f(p3.x(), p3.y());
         glEnd();
     }
-    if (drawCircles) {
+
+    // draw point list
+    glColor3f(1.0f, 0.2f, 0.2f);
+    glPointSize(pointSize);
+    glBegin(GL_POINTS);
+    for (const QPointF &p : pointList) {
+        glVertex2f(p.x(), p.y());
+    }
+    glColor3f(0.5f, 0.2f, 0.2f);
+    if (impossiblePoint != nullptr) {
+        glVertex2f(impossiblePoint->x(), impossiblePoint->y());
+    }
+    glEnd();
+
+    if (drawCircles) { // draw circles if selected
         glLineWidth(circleLineWidth);
         for (int t = 0; t < triangulation.size(); t++) {
             QPointF p1 = std::get<0>(triangulation[t]);
@@ -321,6 +329,7 @@ void GLWidget::delaunayTriangulation() {
         if (trigIdx == -1) { // pr in no triangle
             // impossible, pr is interior point
             PRINT("Impossible point");
+            impossiblePoint = &pr;
             // delaunayTriangulation();
             return;
         }
@@ -385,6 +394,9 @@ void GLWidget::delaunayTriangulation() {
             triangulation.append({edge.first, edge.second, pr});
         }
     }
+    // came out of loop: no impossible point
+    impossiblePoint = nullptr;
+
     PRINT(triangulation.size() << " triangles found");
 }
 

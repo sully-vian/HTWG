@@ -37,4 +37,5 @@ class GLWidget : public QOpenGLWidget {
     QList<QPointF> pointList;
     QList<QPointF> hull;
     QList<std::tuple<QPointF, QPointF, QPointF>> triangulation;
+    QPointF *impossiblePoint; // TODO: remove
 };
