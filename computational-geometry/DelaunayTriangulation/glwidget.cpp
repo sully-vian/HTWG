@@ -57,7 +57,8 @@ void drawCircle(float cx, float cy, float radius) {
 GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent) {
     pointSize = 20.0f;
     lineWidth = 5.0f;
-    backColor = 0.6f;
+    lightChecker = 0.8f;
+    darkChecker = 0.6f;
     circleLineWidth = 2.5f;
 }
 
@@ -77,9 +78,12 @@ void GLWidget::paintGL() {
 
     glColor3f(0.0f, 0.0f, 1.0f);
     for (int t = 0; t < triangulation.size(); t++) {
-        glColor3f(RAND(), RAND(), RAND());
-        glBegin(GL_TRIANGLES); // lost so much time because this way outside of
-                               // the loop arghhh
+        if (fillTriangles) {
+            glColor3f(RAND(), RAND(), RAND());
+            glBegin(GL_TRIANGLES);
+        } else {
+            glBegin(GL_LINE_LOOP);
+        }
         QPointF p1 = std::get<0>(triangulation[t]);
         QPointF p2 = std::get<1>(triangulation[t]);
         QPointF p3 = std::get<2>(triangulation[t]);
@@ -102,15 +106,15 @@ void GLWidget::paintGL() {
     }
     glEnd();
 
-    if (drawCircles) { // draw circles if selected
+    if (drawCircles) {               // draw circles if selected
         glLineWidth(circleLineWidth);
+        glColor3f(0.0f, 0.0f, 0.0f); // green
         for (int t = 0; t < triangulation.size(); t++) {
             QPointF p1 = std::get<0>(triangulation[t]);
             QPointF p2 = std::get<1>(triangulation[t]);
             QPointF p3 = std::get<2>(triangulation[t]);
             QPointF center = circumCenter(p1, p2, p3);
             float radius = QLineF(p1, center).length();
-            glColor3f(0.0f, 1.0f, 0.0f); // green
             drawCircle(center.x(), center.y(), radius);
         }
     }
@@ -125,6 +129,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
         PRINT("too few point (" << pointList.size() << ") skipped");
     } else {
         delaunayTriangulation();
+        PRINT(triangulation.size() << " triangles found");
     }
     update();
 }
@@ -259,7 +264,7 @@ int findContainingTriangle(
 }
 
 /*
- * Check if point is inside circumcircle of triangle abc
+ * Check if p is inside circumcircle of triangle abc
  * Method: compute circumcenter and compare distances
  */
 bool pointInCircumcircle(const QPointF &p, const QPointF &a, const QPointF &b,
@@ -301,43 +306,40 @@ void GLWidget::delaunayTriangulation() {
         int next = (i + 1) % hull.size();
         triangulation.append({p1, hull[i], hull[next]});
     }
+
+    // 4. fix fan
     int fixed = 0;
-    for (int t = 0; t < triangulation.size() - 1; t += 2) {
+    for (int t = 0; t < triangulation.size() - 1; t++) {
         std::tuple<QPointF, QPointF, QPointF> trig1 =
-            triangulation.at(t);     // {p1, pn, pn+1}
+            triangulation[t];     // {p1, pn, pn+1}
         const std::tuple<QPointF, QPointF, QPointF> trig2 =
-            triangulation.at(t + 1); // {p1, pn+1, pn+2}
+            triangulation[t + 1]; // {p1, pn+1, pn+2}
         QPointF pn = std::get<1>(trig1);
         QPointF pn1 = std::get<2>(trig1);
         QPointF pn2 = std::get<2>(trig2);
         // if p1, pn, pn1, pn2 do not respect delaunay condition, flip common
         // edge
-        if (pointInCircumcircle(p1, pn, pn1, pn2)) {
-            triangulation[t] = {p1, pn, pn2};
-            triangulation[t + 1] = {pn, pn1, pn2};
+        if (pointInCircumcircle(pn2, p1, pn, pn1)) {
+            triangulation[t] = {pn, pn1, pn2};
+            triangulation[t + 1] = {p1, pn, pn2};
             fixed++;
         }
     }
     PRINT("fixed " << fixed << " triangles");
 
-    // 4. Add interior points one by one
+    // 5. Add interior points one by one
     for (int r = 0; r < interiorPoints.size(); r++) {
         QPointF pr = interiorPoints[r];
 
-        // 5. Find triangle containing pr
+        // Find triangle containing pr
         const int trigIdx = findContainingTriangle(pr, triangulation);
         if (trigIdx == -1) { // pr in no triangle
-            // impossible, pr is interior point
-            PRINT("Impossible point");
+                             // impossible, pr is interior point
+            PRINT("\033[1mImpossible point!\033[0m");
             impossiblePoint = &pr;
             // delaunayTriangulation();
             return;
         }
-        const std::tuple<QPointF, QPointF, QPointF> trig =
-            triangulation.at(trigIdx);
-        QPointF pi = std::get<0>(trig);
-        QPointF pj = std::get<1>(trig);
-        QPointF pk = std::get<2>(trig);
 
         // 6. Find all triangles whose circumcircle contains the new point
         // pr
@@ -396,8 +398,6 @@ void GLWidget::delaunayTriangulation() {
     }
     // came out of loop: no impossible point
     impossiblePoint = nullptr;
-
-    PRINT(triangulation.size() << " triangles found");
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -413,13 +413,20 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
             QApplication::instance()->quit();
             break;
         case Qt::Key_R:
-            PRINT("Resetting points and hull...");
-            pointList = QList<QPointF>();
-            hull = QList<QPointF>();
+            PRINT("Resetting...");
+            pointList.clear();
+            hull.clear();
+            triangulation.clear();
+            impossiblePoint = nullptr;
             break;
         case Qt::Key_C:
             drawCircles = !drawCircles;
             PRINT("toggling view circle: " << drawCircles);
+            update();
+            break;
+        case Qt::Key_F:
+            fillTriangles = !fillTriangles;
+            PRINT("toggling fill triangles: " << fillTriangles);
             update();
             break;
         default:
@@ -431,7 +438,7 @@ void GLWidget::keyPressEvent(QKeyEvent *event) {
 
 void GLWidget::initializeGL() {
     resizeGL(width(), height());
-    glClearColor(backColor, backColor, backColor,
+    glClearColor(darkChecker, darkChecker, darkChecker,
                  1.0f); // set background color
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -454,10 +461,37 @@ void GLWidget::resizeGL(int width, int height) {
 }
 
 void GLWidget::clearBackground() {
-    glClearColor(backColor, backColor, backColor, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-}
+    // Get the number of squares you want horizontally and vertically
+    const int squaresX = 100;
+    const int squaresY = 100;
 
+    // Size of each square in normalized device coordinates (-1 to 1)
+    float squareWidth = 2.0f / squaresX;
+    float squareHeight = 2.0f / squaresY;
+
+    // Draw each square
+    glBegin(GL_QUADS);
+    for (int i = 0; i < squaresX; ++i) {
+        for (int j = 0; j < squaresY; ++j) {
+            // Alternate colors
+            if ((i + j) % 2 == 0)
+                glColor3f(lightChecker, lightChecker, lightChecker);
+            else
+                glColor3f(darkChecker, darkChecker, darkChecker);
+
+            float x0 = -1.0f + i * squareWidth;
+            float y0 = -1.0f + j * squareHeight;
+            float x1 = x0 + squareWidth;
+            float y1 = y0 + squareHeight;
+
+            glVertex2f(x0, y0);
+            glVertex2f(x1, y0);
+            glVertex2f(x1, y1);
+            glVertex2f(x0, y1);
+        }
+    }
+    glEnd();
+}
 QPointF GLWidget::transformPosition(QPoint p) {
     return QPointF((2.0 * p.x() / width() - 1.0) * aspectx,
                    -(2.0 * p.y() / height() - 1.0) * aspecty);

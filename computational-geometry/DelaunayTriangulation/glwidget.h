@@ -31,8 +31,9 @@ class GLWidget : public QOpenGLWidget {
     void delaunayTriangulation();
     QPointF transformPosition(QPoint p);
     double aspectx, aspecty;
-    float pointSize, lineWidth, backColor, circleLineWidth;
+    float pointSize, lineWidth, darkChecker, lightChecker, circleLineWidth;
     bool drawCircles = false;
+    bool fillTriangles = false;
 
     QList<QPointF> pointList;
     QList<QPointF> hull;
