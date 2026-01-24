@@ -33,6 +33,7 @@
 }
 
 #set document(title: [LE05: Maximum flows])
+#set par(justify: true)
 
 #title()
 

@@ -46,6 +46,7 @@
 }
 
 #set document(title: [LE02: Graph teory and representations])
+#set par(justify: true)
 
 #title()
 

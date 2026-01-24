@@ -37,6 +37,7 @@
 }
 
 #set document(title: [LE07: Combinatorial optimization])
+#set par(justify: true)
 
 #title()
 
