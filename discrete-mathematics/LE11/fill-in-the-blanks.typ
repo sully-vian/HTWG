@@ -7,8 +7,8 @@
   "integer coefficients",
   "cliques/complete graphs",
   "backtracking",
-  "climb",
-  blank, // TODO
+  "Hill Climb",
+  "Simulated Annealing",
   "matroid",
   "rank",
   "monotonicity",
@@ -16,7 +16,7 @@
   "feasible solutions",
   "dual LP",
   "optimal",
-  blank, // TODO
+  "Max-Flow Min-Cut Theorem",
 ).map(
   s => [*#s*],
 )
@@ -33,7 +33,7 @@
 
 In graph theory, the #word $p G(k)$ is the number of ways to color a graph with $k$ valid colors. Such a polynomial always has #word. For practical calculation, an iterative procedure can be used in which the graph is successively reduced to #word ($K_n$).
 
-For complex optimization problems, such as the set coverage problem or the knapsack problem, various algorithms are often used. While #word seeks an exact solution, heuristic methods such as hill #word or #word use approximate approaches.
+For complex optimization problems, such as the set coverage problem or the knapsack problem, various algorithms are often used. While #word seeks an exact solution, heuristic methods such as #word or #word use approximate approaches.
 
 A central concept in combinatorial optimization is the #word. For a subset $T$ of a matroid, the #word $"rg"(T)$ is defined, which, among other things, possesses the property of #word. (from $T subset.eq S$ follows that $"rg"(T) lt.eq "rg"(S)$).
 
