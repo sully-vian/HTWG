@@ -5,33 +5,34 @@
 #let words = (
   "filter",
   "matroid",
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
-  blank,
+  blank, // TODO
+  "bases", // TODO
+  "of same cardinality", // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
+  blank, // TODO
 ).map(
   s => [*#s*],
-) //TODO
+)
 
 #let word = context {
   wc.step()
   words.at(wc.get().at(0))
 }
 
-#words.len()
+#set document(title: [LE10: Combinatorial Optimization and graph theory])
+#set par(justify: true)
 
-= Fill in the blanks: Combinatorial Optimization and graph theory
+#title()
 
-A system of sets $M$ on a base set $A$ is called a #word if it is closed with respects to inclusion. Such a systemis called a #word if it also satisfies the so-called #word. The independant sets with the maximum number of elements within a matroid are always #word. An important property of finite matroids is that all these sets are always #word.
+A system of sets $M$ on a base set $A$ is called a #word if it is closed with respects to inclusion. Such a systemis called a #word if it also satisfies the so-called #word. The independant sets with the maximum number of elements within a matroid are called #word. An important property of finite matroids is that all these sets are always #word.
 
 A significant result of optimization states that a #word for a filter $M$ finds an optimal solution for any cost function if and only if $M$ is a matroid? A classic example of this is the #word matroid of a graph, where the independant sets are the edge sets that spann a #word. Applying the greedy principle to this always yields a #word.
 
